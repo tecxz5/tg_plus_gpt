@@ -1,11 +1,12 @@
 from telebot import TeleBot
 from telebot.types import ReplyKeyboardMarkup
-from config import TOKEN, MAX_TOKENS
+from config import TOKEN, MAX_TOKENS, GPT_TOKENAIZER
 from gpt import GPT
 
 bot = TeleBot(TOKEN)
 gpt = GPT()
 MAX_LETTERS = MAX_TOKENS
+TOKENAIZER = GPT_TOKENAIZER
 
 users_history = {}
 
@@ -26,7 +27,9 @@ def start(message):
 @bot.message_handler(commands=['help'])
 def support(message):
     bot.send_message(message.from_user.id,
-                     text="Чтобы приступить к решению задачи: нажми /solve_task, а затем напиши условие задачи",
+                     text=f"""В данном боте при ответе используется модель {TOKENAIZER} и максимальное количество токенов равняется {MAX_LETTERS}.
+Бот направлен на максимальную оптимизацию ответов, если у вас возникли какие-либо проблемы обращайтесь к разработчикам модели и лимиту токенов.
+Рекомендуется скорее нажать /solve_task, так как зря писалось всё это?""",
                      reply_markup=create_keyboard(["/solve_task"]))
 
 @bot.message_handler(commands=['solve_task'])
