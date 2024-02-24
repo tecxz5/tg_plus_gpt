@@ -1,10 +1,11 @@
 from telebot import TeleBot
 from telebot.types import ReplyKeyboardMarkup
-from config import TOKEN
+from config import TOKEN, MAX_TOKENS
 from gpt import GPT
 
 bot = TeleBot(TOKEN)
 gpt = GPT()
+MAX_LETTERS = MAX_TOKENS
 
 users_history = {}
 

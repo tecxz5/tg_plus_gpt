@@ -1,10 +1,10 @@
 import requests
 from transformers import AutoTokenizer
-from config import MAX_TOKENS, GPT_URL
+from config import MAX_TOKENS, GPT_URL, GPT_TOKENAIZER
 
 MAX_LETTERS = MAX_TOKENS
 IMPORT_URL = GPT_URL
-
+TOKENAIZER = GPT_TOKENAIZER
 
 class GPT:
     def __init__(self, system_content="Ты - дружелюбный помощник для решения задач по математике. Давай подробный ответ с решением на русском языке"):
@@ -78,4 +78,3 @@ class GPT:
     # Очистка истории общения
     def clear_history(self):
         self.assistant_content = "Решим задачу по шагам: "
-
