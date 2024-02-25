@@ -3,23 +3,15 @@ import logging
 from transformers import AutoTokenizer
 from config import MAX_TOKENS, GPT_URL
 
-MAX_LETTERS = MAX_TOKENS
-IMPORT_URL = GPT_URL
-
-# Настройка логирования для gpt.py
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.ERROR,
-    filename='gpt_errors.log',
-    filemode='a'
-)
+logger = logging.getLogger(__name__)
+logging.basicConfig(filename='gpt_errors.log', level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 class GPT:
     def __init__(self, system_content="Ты - дружелюбный помощник для решения задач по математике. Давай подробный ответ с решением на русском языке"):
         self.system_content = system_content
-        self.URL = IMPORT_URL
+        self.URL = GPT_URL
         self.HEADERS = {"Content-Type": "application/json"}
-        self.MAX_TOKENS = MAX_LETTERS
+        self.MAX_TOKENS = MAX_TOKENS
         self.assistant_content = "Ответ вашей задачи: "
 
     @staticmethod
@@ -28,17 +20,20 @@ class GPT:
         return len(tokenizer.encode(prompt))
 
     def process_resp(self, response):
-        if response.status_code <   200 or response.status_code >=   300:
+        if response.status_code <  200 or response.status_code >=  300:
+            logger.error(f"Ошибка при отправке запроса к GPT API: {response.status_code}")
             self.clear_history()
             return False, f"Ошибка: {response.status_code}"
 
         try:
             full_response = response.json()
-        except:
+        except Exception as e:
+            logger.error(f"Ошибка при получении JSON от GPT API: {e}")
             self.clear_history()
             return False, "Ошибка получения JSON"
 
         if "error" in full_response or 'choices' not in full_response:
+            logger.error(f"Ошибка в ответе от GPT API: {full_response}")
             self.clear_history()
             return False, f"Ошибка: {full_response}"
 
@@ -60,14 +55,20 @@ class GPT:
                 {"role": "user", "content": user_request},
                 {"role": "assistant", "content": self.assistant_content}
             ],
-            "temperature":   1.2,
+            "temperature":  1.2,
             "max_tokens": self.MAX_TOKENS,
         }
         return json
 
-    def send_request(self, json):
-        resp = requests.post(url=self.URL, headers=self.HEADERS, json=json)
-        return resp
+    def send_request(json):
+        try:
+            resp = requests.post(url=self.URL, headers=self.HEADERS, json=json)
+            logging.debug(f"Request sent to GPT API: {json}")
+            logging.debug(f"Response from GPT API: {resp.text}")
+            return resp
+        except Exception as e:
+            logging.error(f"Error sending request to GPT API: {e}")
+            return None
 
     def save_history(self, content_response):
         self.assistant_content += content_response

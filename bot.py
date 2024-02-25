@@ -7,10 +7,8 @@ from gpt import GPT
 bot = TeleBot(TOKEN)
 gpt = GPT()
 MAX_LETTERS = MAX_TOKENS
-
 users_history = {}
 
-# Настройка   логирования
 logging.basicConfig(filename='bot_errors.log', level=logging.ERROR, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 def create_keyboard(buttons_list):
@@ -24,7 +22,7 @@ def start(message):
     bot.send_message(message.chat.id,
                      text=f"Привет, {user_name}! Я бот-помощник для решения разных задач!\n"
                           f"Ты можешь прислать условие задачи, а я постараюсь её решить.\n"
-                          "Иногда (всегда) ответ будtт получатся на английском так как токенайзер не хочет работать.\n"
+                          "Иногда (всегда) ответ будт получатся на английском так как токенайзер не хочет работать.\n"
                             "/solve_task - для вопросов, /help - для более подробной информации",
                      reply_markup=create_keyboard(["/solve_task", '/help']))
 
@@ -65,5 +63,15 @@ def send_debug_info(message):
             bot.send_document(user_id, file)
     except FileNotFoundError:
         bot.send_message(user_id, "Файл логов не найден.")
+
+@bot.message_handler(func=lambda message: True)
+def get_promt(message):
+    user_id = message.from_user.id
+    user_request = message.text
+    # Сохраняем запрос пользователя для последующего использования
+    if user_id not in users_history:
+        users_history[user_id] = {'user_request': user_request}
+    else:
+        users_history[user_id]['user_request'] = user_request
 
 bot.polling()
