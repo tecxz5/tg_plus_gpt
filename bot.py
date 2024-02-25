@@ -1,6 +1,5 @@
 from telebot import TeleBot
 from telebot.types import ReplyKeyboardMarkup
-import logging
 from config import TOKEN, MAX_TOKENS
 from gpt import GPT
 
@@ -8,8 +7,6 @@ bot = TeleBot(TOKEN)
 gpt = GPT()
 MAX_LETTERS = MAX_TOKENS
 users_history = {}
-
-logging.basicConfig(filename='bot_errors.log', level=logging.ERROR, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 def create_keyboard(buttons_list):
     keyboard = ReplyKeyboardMarkup(row_width=2, resize_keyboard=True, one_time_keyboard=True)
@@ -59,7 +56,7 @@ def continue_solve_task(message):
 def send_debug_info(message):
     user_id = message.from_user.id
     try:
-        with open('bot_errors.log', 'rb') as file:
+        with open('gpt_errors.log', 'rb') as file:
             bot.send_document(user_id, file)
     except FileNotFoundError:
         bot.send_message(user_id, "Файл логов не найден.")
