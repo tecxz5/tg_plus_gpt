@@ -3,9 +3,11 @@ import logging
 from transformers import AutoTokenizer
 from config import MAX_TOKENS, GPT_URL
 
+# логирование
 logger = logging.getLogger(__name__)
 logging.basicConfig(filename='gpt_errors.log', level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
+#работа с gpt
 class GPT:
     def __init__(self, system_content="Ты - дружелюбный помощник для решения задач по математике. Давай подробный ответ с решением на русском языке"):
         self.system_content = system_content
@@ -14,12 +16,12 @@ class GPT:
         self.MAX_TOKENS = MAX_TOKENS
         self.assistant_content = "Ответ вашей задачи: "
 
-    @staticmethod
+    @staticmethod # счетчик токенов
     def count_tokens(prompt):
         tokenizer = AutoTokenizer.from_pretrained("rhysjones/phi-2-orange")
         return len(tokenizer.encode(prompt))
 
-    def process_resp(self, response):
+    def process_resp(self, response): # проверка ошибок и вывод их в логер
         if response.status_code <  200 or response.status_code >=  300:
             logger.error(f"Ошибка при отправке запроса к GPT API: {response.status_code}")
             self.clear_history()
@@ -46,7 +48,7 @@ class GPT:
         self.save_history(result)
         return True, self.assistant_content + result
 
-    def make_promt(self, user_request):
+    def make_promt(self, user_request): # остатки прошлого
         if user_request == "":
             user_request = "продолжи"
         json = {
@@ -60,7 +62,7 @@ class GPT:
         }
         return json
 
-    def send_request(json):
+    def send_request(json): # переписаный логер
         try:
             resp = requests.post(url=self.URL, headers=self.HEADERS, json=json)
             logging.debug(f"Request sent to GPT API: {json}")
