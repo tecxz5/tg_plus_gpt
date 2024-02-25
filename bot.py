@@ -1,6 +1,6 @@
 from telebot import TeleBot
 from telebot.types import ReplyKeyboardMarkup
-from config import TOKEN, MAX_TOKENS, GPT_TOKENAIZER
+from config import TOKEN, MAX_TOKENS
 from gpt import GPT
 
 bot = TeleBot(TOKEN)
@@ -22,7 +22,7 @@ def start(message):
                      text=f"Привет, {user_name}! Я бот-помощник для решения разных задач!\n"
                           f"Ты можешь прислать условие задачи, а я постараюсь её решить.\n"
                           "Иногда (всегда) ответ ыбудут получатся на английском так как токенайзер не хочет работать.\n"
-                            "/solve_task - для вопросов, /help - для более подробной информации"
+                            "/solve_task - для вопросов, /help - для более подробной информации",
                      reply_markup=create_keyboard(["/solve_task", '/help']))
 
 @bot.message_handler(commands=['help'])
