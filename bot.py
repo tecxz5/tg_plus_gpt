@@ -6,7 +6,6 @@ from gpt import GPT
 bot = TeleBot(TOKEN)
 gpt = GPT()
 MAX_LETTERS = MAX_TOKENS
-TOKENAIZER = GPT_TOKENAIZER
 
 users_history = {}
 
