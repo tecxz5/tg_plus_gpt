@@ -1,9 +1,18 @@
 import requests
+import logging
 from transformers import AutoTokenizer
 from config import MAX_TOKENS, GPT_URL
 
 MAX_LETTERS = MAX_TOKENS
 IMPORT_URL = GPT_URL
+
+# Настройка логирования для gpt.py
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.ERROR,
+    filename='gpt_errors.log',
+    filemode='a'
+)
 
 class GPT:
     def __init__(self, system_content="Ты - дружелюбный помощник для решения задач по математике. Давай подробный ответ с решением на русском языке"):
@@ -19,7 +28,7 @@ class GPT:
         return len(tokenizer.encode(prompt))
 
     def process_resp(self, response):
-        if response.status_code <  200 or response.status_code >=  300:
+        if response.status_code <   200 or response.status_code >=   300:
             self.clear_history()
             return False, f"Ошибка: {response.status_code}"
 
@@ -40,7 +49,7 @@ class GPT:
             return True, "Конец объяснения"
 
         self.save_history(result)
-        return True, self.assistant_content
+        return True, self.assistant_content + result
 
     def make_promt(self, user_request):
         if user_request == "":
@@ -51,7 +60,7 @@ class GPT:
                 {"role": "user", "content": user_request},
                 {"role": "assistant", "content": self.assistant_content}
             ],
-            "temperature":  1.2,
+            "temperature":   1.2,
             "max_tokens": self.MAX_TOKENS,
         }
         return json

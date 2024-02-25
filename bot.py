@@ -1,5 +1,6 @@
 from telebot import TeleBot
 from telebot.types import ReplyKeyboardMarkup
+import logging
 from config import TOKEN, MAX_TOKENS
 from gpt import GPT
 
@@ -8,6 +9,9 @@ gpt = GPT()
 MAX_LETTERS = MAX_TOKENS
 
 users_history = {}
+
+# Настройка   логирования
+logging.basicConfig(filename='bot_errors.log', level=logging.ERROR, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 def create_keyboard(buttons_list):
     keyboard = ReplyKeyboardMarkup(row_width=2, resize_keyboard=True, one_time_keyboard=True)
@@ -20,7 +24,7 @@ def start(message):
     bot.send_message(message.chat.id,
                      text=f"Привет, {user_name}! Я бот-помощник для решения разных задач!\n"
                           f"Ты можешь прислать условие задачи, а я постараюсь её решить.\n"
-                          "Иногда (всегда) ответ ыбудут получатся на английском так как токенайзер не хочет работать.\n"
+                          "Иногда (всегда) ответ будtт получатся на английском так как токенайзер не хочет работать.\n"
                             "/solve_task - для вопросов, /help - для более подробной информации",
                      reply_markup=create_keyboard(["/solve_task", '/help']))
 
@@ -36,25 +40,14 @@ def solve_task(message):
     bot.send_message(message.chat.id, "Напиши условие новой задачи:")
     bot.register_next_step_handler(message, get_promt)
 
-def continue_filter(message):
-    button_text = 'Продолжить решение'
-    return message.text == button_text
-
-@bot.message_handler(func=continue_filter)
-def get_promt(message):
+@bot.message_handler(commands=['continue'])
+def continue_solve_task(message):
     user_id = message.from_user.id
-    if message.content_type != "text":
-        bot.send_message(user_id, "Необходимо отправить именно текстовое сообщение")
-        bot.register_next_step_handler(message, get_promt)
+    if user_id not in users_history or not users_history[user_id]['user_request']:
+        bot.send_message(user_id, "Нет предыдущего запроса для продолжения.")
         return
 
-    user_request = message.text
-    if len(user_request) > MAX_LETTERS:
-        bot.send_message(user_id, f"Запрос несоответствует кол-ву символов. Максимально {MAX_LETTERS} символов.")
-        bot.register_next_step_handler(message, get_promt)
-        return
-
-    # Отправляем запрос в GPT
+    user_request = users_history[user_id]['user_request']
     json = gpt.make_promt(user_request)
     resp = gpt.send_request(json)
     response = gpt.process_resp(resp)
@@ -63,5 +56,14 @@ def get_promt(message):
         bot.send_message(user_id, "Не удалось выполнить запрос...")
     else:
         bot.send_message(user_id, response[1])
+
+@bot.message_handler(commands=['debug'])
+def send_debug_info(message):
+    user_id = message.from_user.id
+    try:
+        with open('bot_errors.log', 'rb') as file:
+            bot.send_document(user_id, file)
+    except FileNotFoundError:
+        bot.send_message(user_id, "Файл логов не найден.")
 
 bot.polling()
