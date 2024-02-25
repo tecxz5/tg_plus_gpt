@@ -62,10 +62,10 @@ class GPT:
         }
         return json
 
-    def send_request(json): # переписаный логер
+    def send_request(self,json): # переписаный логер
         try:
             resp = requests.post(url=self.URL, headers=self.HEADERS, json=json)
-            logging.debug(f"Request sent to GPT API: {json}")
+            logging.debug(f"Request sent to GPT API: {self,json}")
             logging.debug(f"Response from GPT API: {resp.text}")
             return resp
         except Exception as e:

@@ -5,7 +5,6 @@ from gpt import GPT
 
 bot = TeleBot(TOKEN)
 gpt = GPT()
-MAX_LETTERS = MAX_TOKENS
 users_history = {}
 
 def create_keyboard(buttons_list):
@@ -70,5 +69,16 @@ def get_promt(message):
         users_history[user_id] = {'user_request': user_request}
     else:
         users_history[user_id]['user_request'] = user_request
+        return
+
+    user_request = users_history[user_id]['user_request']
+    json = gpt.make_promt(user_request)
+    resp = gpt.send_request(json)
+    response = gpt.process_resp(resp)
+
+    if not response[0]:
+        bot.send_message(user_id, "Не удалось выполнить запрос...")
+    else:
+        bot.send_message(user_id, response[1])
 
 bot.polling()
