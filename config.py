@@ -1,3 +1,3 @@
-TOKEN = "7089945257:AAEEf3GUUnwxSdZY0VQv5xaotepeEvXc51M"
-MAX_TOKENS = 50
-GPT_URL = "http://158.160.135.104:1234/v1/chat/completions"
+TOKEN = ""
+MAX_TOKENS = 
+GPT_URL = ""
