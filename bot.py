@@ -50,6 +50,7 @@ def continue_solve_task(message):
         bot.send_message(user_id, "Не удалось выполнить запрос...")
     else:
         bot.send_message(user_id, response[1])
+        gpt.clear_history()
 
 @bot.message_handler(commands=['debug']) # /debug
 def send_debug_info(message):
@@ -60,25 +61,25 @@ def send_debug_info(message):
     except FileNotFoundError:
         bot.send_message(user_id, "Файл логов не найден.")
 
-@bot.message_handler(func=lambda message: True) # функция гет промпт для отправки в gpt
+bot.message_handler(func=lambda message: True) # функция гет промпт для отправки в gpt
 def get_promt(message):
     user_id = message.from_user.id
     user_request = message.text
-    # Сохраняем запрос пользователя для последующего использования
-    if user_id not in users_history:
-        users_history[user_id] = {'user_request': user_request}
-    else:
-        users_history[user_id]['user_request'] = user_request
-        return
-
-    user_request = users_history[user_id]['user_request']
-    json = gpt.make_promt(user_request)
-    resp = gpt.send_request(json)
-    response = gpt.process_resp(resp)
+    # Создаем новый экземпляр GPT для каждого нового запроса
+    gpt_instance = GPT()
+    json = gpt_instance.make_promt(user_request)
+    resp = gpt_instance.send_request(json)
+    response = gpt_instance.process_resp(resp)
 
     if not response[0]:
         bot.send_message(user_id, "Не удалось выполнить запрос...")
     else:
+        # Добавляем ответ в историю пользователя
+        if user_id not in users_history:
+            users_history[user_id] = {'user_request': user_request, 'response': response[1]}
+        else:
+            users_history[user_id]['user_request'] += "\n" + user_request
+            users_history[user_id]['response'] += "\n" + response[1]
         bot.send_message(user_id, response[1])
 
 bot.polling()

@@ -10,7 +10,9 @@ logging.basicConfig(filename='gpt_errors.log', level=logging.DEBUG, format='%(as
 
 #работа с gpt
 class GPT:
+    logger.info("На классе GPT ответ есть")
     def __init__(self, system_content="Ты - дружелюбный помощник для решения задач по математике. Давай подробный ответ с решением на русском языке"):
+        logger.info("Класс запущен")
         self.system_content = system_content
         self.URL = GPT_URL
         self.HEADERS = {"Content-Type": "application/json"}
@@ -19,7 +21,7 @@ class GPT:
 
     @staticmethod # счетчик токенов
     def count_tokens(prompt):
-        tokenizer = AutoTokenizer.from_pretrained("rhysjones/phi-2-orange")
+        tokenizer = AutoTokenizer.from_pretrained("")
         return len(tokenizer.encode(prompt))
 
     def process_resp(self, response): # проверка ошибок и вывод их в логер
@@ -64,6 +66,7 @@ class GPT:
         return json
 
     def send_request(self,json): # переписаный логер
+        logger.info("На send_request ответ есть")
         try:
             resp = requests.post(url=self.URL, headers=self.HEADERS, json=json)
             logging.debug(f"Request sent to GPT API: {self,json}")
@@ -77,4 +80,4 @@ class GPT:
         self.assistant_content += content_response
 
     def clear_history(self):
-        self.assistant_content = "Решим задачу по шагам: "
+        self.assistant_content = "Ответ вашей задачи: "
