@@ -8,12 +8,26 @@ from config import MAX_TOKENS, GPT_URL
 logger = logging.getLogger(__name__)
 logging.basicConfig(filename='gpt_errors.log', level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
+# gpt.py
+
+themes_and_levels = {
+    'math': {
+        'beginner': 'Ты - дружелюбный помощник для новичков по математике. Давай подробный ответ с решением на русском языке',
+        'advanced': 'Ты - продвинутый помощник для математики. Давай подробный ответ с решением на русском языке'
+    },
+    'cooking': {
+        'beginner': 'Ты - помощник для новичков по кулинарии. Давай подробный ответ с рецептом на русском языке',
+        'advanced': 'Ты - продвинутый помощник для кулинарии. Давай подробный ответ с рецептом на русском языке'
+    },
+    'biology': {
+        'beginner': 'Ты - помощник для новичков по биологии. Давай подробный ответ с объяснением на русском языке',
+        'advanced': 'Ты - продвинутый помощник для биологии. Давай подробный ответ с объяснением на русском языке'
+    }
+}
 #работа с gpt
 class GPT:
-    logger.info("На классе GPT ответ есть")
-    def __init__(self, system_content="Ты - дружелюбный помощник для решения задач по математике. Давай подробный ответ с решением на русском языке"):
-        logger.info("Класс запущен")
-        self.system_content = system_content
+    def __init__(self, subject="math", level="beginner"):
+        self.system_content = themes_and_levels[subject][level]
         self.URL = GPT_URL
         self.HEADERS = {"Content-Type": "application/json"}
         self.MAX_TOKENS = MAX_TOKENS

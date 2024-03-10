@@ -1,40 +1,72 @@
-from telebot import TeleBot
-from telebot.types import ReplyKeyboardMarkup
+from telebot import TeleBot, types
 from config import TOKEN, MAX_TOKENS
-from gpt import GPT
+from gpt import GPT, themes_and_levels
+from database import create_database, add_user_data, update_user_data, get_user_data, save_subject_and_level
+
+create_database()
 
 bot = TeleBot(TOKEN)
 gpt = GPT()
 users_history = {}
 
 def create_keyboard(buttons_list):
-    keyboard = ReplyKeyboardMarkup(row_width=2, resize_keyboard=True, one_time_keyboard=True)
+    keyboard = types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True, one_time_keyboard=True)
     keyboard.add(*buttons_list)
     return keyboard
 
-@bot.message_handler(commands=['start']) # /start
+@bot.message_handler(commands=['start'])
 def start(message):
     user_name = message.from_user.first_name
     bot.send_message(message.chat.id,
                      text=f"Привет, {user_name}! Я бот-помощник для решения разных задач!\n"
                           f"Ты можешь прислать условие задачи, а я постараюсь её решить.\n"
                           "Иногда (всегда) ответ будт получатся на английском так как токенайзер не хочет работать.\n"
-                            "/solve_task - для вопросов, /help - для более подробной информации",
-                     reply_markup=create_keyboard(["/solve_task", '/help']))
+                            "/solve_task - для вопросов, /help - для более подробной информации")
 
-@bot.message_handler(commands=['help']) #/help
+@bot.message_handler(commands=['help'])
 def support(message):
     bot.send_message(message.from_user.id,
                      text=f"""Бот направлен на максимальную оптимизацию ответов, если у вас возникли какие-либо проблемы обращайтесь к разработчикам модели и лимиту токенов.
-Рекомендуется скорее нажать /solve_task, так как зря писалось всё это?""",
-                     reply_markup=create_keyboard(["/solve_task"]))
+Рекомендуется скорее нажать /solve_task, так как зря писалось всё это?""")
 
-@bot.message_handler(commands=['solve_task']) # /solve_task
+@bot.message_handler(commands=['solve_task'])
 def solve_task(message):
-    bot.send_message(message.chat.id, "Напиши условие новой задачи:")
-    bot.register_next_step_handler(message, get_promt)
+    user_id = message.chat.id
+    task = message.text
+    profile = get_user_data(user_id, 'bot_database.db')
+    if not profile:
+        bot.send_message(user_id, "Пожалуйста, выберите профиль с помощью команды /select_profile.")
+        return
+    add_user_data(user_id, profile[1], profile[2], task, "")
+    gpt_response = "Ответ от GPT"
+    update_user_data(user_id, gpt_response=gpt_response)
 
-@bot.message_handler(commands=['continue']) # /continue
+@bot.message_handler(commands=['select_profile'])
+def select_profile(message):
+    user_id = message.chat.id
+    markup = types.InlineKeyboardMarkup()
+    for subject in themes_and_levels.keys():
+        markup.add(types.InlineKeyboardButton(subject, callback_data=subject))
+    bot.send_message(user_id, "Выберите предмет:", reply_markup=markup)
+
+@bot.callback_query_handler(func=lambda call: True)
+def handle_subject_selection(call):
+    selected_subject = call.data
+    user_id = call.message.chat.id
+    markup = types.InlineKeyboardMarkup()
+    for level in themes_and_levels[selected_subject].keys():
+        markup.add(types.InlineKeyboardButton(level, callback_data=f"{selected_subject}_{level}"))
+    bot.send_message(user_id, f"Выбран предмет: {selected_subject}. Теперь выберите уровень:", reply_markup=markup)
+
+@bot.callback_query_handler(func=lambda call: True)
+def handle_level_selection(call):
+    selected_subject_level = call.data
+    user_id = call.message.chat.id
+    subject, level = selected_subject_level.split('_')
+    save_subject_and_level(user_id, subject, level, 'bot_database.db')
+    bot.send_message(user_id, f"Выбран профиль: {subject} - {level}")
+
+@bot.message_handler(commands=['continue'])
 def continue_solve_task(message):
     user_id = message.from_user.id
     if user_id not in users_history or not users_history[user_id]['user_request']:
@@ -52,7 +84,7 @@ def continue_solve_task(message):
         bot.send_message(user_id, response[1])
         gpt.clear_history()
 
-@bot.message_handler(commands=['debug']) # /debug
+@bot.message_handler(commands=['debug'])
 def send_debug_info(message):
     user_id = message.from_user.id
     try:
@@ -60,26 +92,5 @@ def send_debug_info(message):
             bot.send_document(user_id, file)
     except FileNotFoundError:
         bot.send_message(user_id, "Файл логов не найден.")
-
-bot.message_handler(func=lambda message: True) # функция гет промпт для отправки в gpt
-def get_promt(message):
-    user_id = message.from_user.id
-    user_request = message.text
-    # Создаем новый экземпляр GPT для каждого нового запроса
-    gpt_instance = GPT()
-    json = gpt_instance.make_promt(user_request)
-    resp = gpt_instance.send_request(json)
-    response = gpt_instance.process_resp(resp)
-
-    if not response[0]:
-        bot.send_message(user_id, "Не удалось выполнить запрос...")
-    else:
-        # Добавляем ответ в историю пользователя
-        if user_id not in users_history:
-            users_history[user_id] = {'user_request': user_request, 'response': response[1]}
-        else:
-            users_history[user_id]['user_request'] += "\n" + user_request
-            users_history[user_id]['response'] += "\n" + response[1]
-        bot.send_message(user_id, response[1])
 
 bot.polling()
