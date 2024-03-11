@@ -1,6 +1,6 @@
 import sqlite3
 
-db_name = 'bot_database.db' # Исправлено имя файла базы данных
+db_name = 'bot_database.db'
 
 def create_connection(db_name):
     conn = sqlite3.connect(db_name)

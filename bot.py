@@ -53,18 +53,25 @@ def select_profile(message):
 def handle_subject_selection(call):
     selected_subject = call.data
     user_id = call.message.chat.id
+    # Проверяем, был ли уже выбран уровень сложности для данного пользователя
+    user_subject_level = get_user_data(user_id, 'bot_database.db')
+    if user_subject_level:
+        # Если уровень сложности уже выбран, пропускаем предложение выбора
+        bot.send_message(user_id, f"Вы уже выбрали: {user_subject_level}")
+        return
+    # Если уровень сложности не выбран, предлагаем выбрать уровень
+    levels = themes_and_levels.get(selected_subject, {})
     markup = types.InlineKeyboardMarkup()
-    for level in themes_and_levels[selected_subject].keys():
+    for level in levels.keys():
         markup.add(types.InlineKeyboardButton(level, callback_data=f"{selected_subject}_{level}"))
     bot.send_message(user_id, f"Выбран предмет: {selected_subject}. Теперь выберите уровень:", reply_markup=markup)
 
 @bot.callback_query_handler(func=lambda call: True)
-def handle_level_selection(call):
+def handle_subject_selection(call):
     selected_subject_level = call.data
     user_id = call.message.chat.id
-    subject, level = selected_subject_level.split('_')
-    save_subject_and_level(user_id, subject, level, 'bot_database.db')
-    bot.send_message(user_id, f"Выбран профиль: {subject} - {level}")
+    # Просто выводим выбранный предмет и уровень
+    bot.send_message(user_id, f"Вы выбрали: {selected_subject_level}")
 
 @bot.message_handler(commands=['continue'])
 def continue_solve_task(message):
