@@ -8,6 +8,7 @@ import json
 bot = telebot.TeleBot(config.TOKEN)
 sql = database.SQL()
 user_history = {}
+sql.create_table()
 
 ai_modes = [
     "Математика",

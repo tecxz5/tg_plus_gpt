@@ -1,6 +1,6 @@
 import sqlite3, json
 
-db_name = 'manager.db'
+db_name = 'bot_database.db'
 
 def create_connection(db_name):
     conn = sqlite3.connect(db_name)
@@ -9,6 +9,20 @@ def create_connection(db_name):
 class SQL:
     def __init__(self):
         self.conn = sqlite3.connect(db_name, check_same_thread=False)
+        self.create_table() # Создание таблицы при инициализации класса
+
+    def create_table(self):
+        """Создание таблицы, если она еще не существует"""
+        c = self.conn.cursor()
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY,
+                gptAI TEXT,
+                history TEXT,
+                level TEXT
+            )
+        ''')
+        self.conn.commit()
 
     def create_user(self, id):
         story = {
@@ -18,8 +32,7 @@ class SQL:
         self.conn.execute("""INSERT INTO users (id, history) VALUES (?, ?)""", (id, json.dumps(story)))
 
     def has_user(self, id):
-        conn = sqlite3.connect(db_name)
-        cursor = conn.cursor()
+        cursor = self.conn.cursor()
         cursor.execute("""SELECT * from users where id = ?""", (id,))
         rows = cursor.fetchall()
         return len(rows) != 0
