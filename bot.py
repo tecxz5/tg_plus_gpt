@@ -1,18 +1,35 @@
-from telebot import TeleBot, types
-from config import TOKEN, MAX_TOKENS
-from gpt import GPT, themes_and_levels
-from database import create_database, add_user_data, update_user_data, get_user_data, save_subject_and_level
+import telebot
+from telebot import types as tgp
+import config
+import gpt
+import database
+import json
 
-create_database()
+bot = telebot.TeleBot(config.TOKEN)
+sql = database.SQL()
+user_history = {}
 
-bot = TeleBot(TOKEN)
-gpt = GPT()
-users_history = {}
+ai_modes = [
+    "Математика",
+    "Кулинария",
+    "Биология"
+]
 
-def create_keyboard(buttons_list):
-    keyboard = types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True, one_time_keyboard=True)
-    keyboard.add(*buttons_list)
-    return keyboard
+ai_desc = {
+    "Математика": "Ты - дружелюбный помощник по математике. Давай подробный ответ с решением на русском языке",
+    "Кулинария": "Ты - помощник по кулинарии. Давай подробный ответ с рецептом на русском языке",
+    "Биология": "Ты - помощник по биологии. Давай подробный ответ с объяснением на русском языке",
+}
+
+level_desc = {
+    "Новичок": "Объясни пожалуйста, я полностью глупый и ничего не понимаю",
+    "Профисионал": "Объясни в чем проблема, но я уже хорошо помнимаю в этой теме"
+}
+
+def keyboard_gen(buttons: list) -> tgp.ReplyKeyboardMarkup:
+    markup = tgp.ReplyKeyboardMarkup(one_time_keyboard=True)
+    for button in buttons: markup.add(tgp.KeyboardButton(button))
+    return markup
 
 @bot.message_handler(commands=['start'])
 def start(message):
@@ -30,71 +47,58 @@ def support(message):
 Рекомендуется скорее нажать /solve_task, так как зря писалось всё это?""")
 
 @bot.message_handler(commands=['solve_task'])
-def solve_task(message):
-    user_id = message.chat.id
-    task = message.text
-    profile = get_user_data(user_id, 'bot_database.db')
-    if not profile:
-        bot.send_message(user_id, "Пожалуйста, выберите профиль с помощью команды /select_profile.")
-        return
-    add_user_data(user_id, profile[1], profile[2], task, "", db_name='bot_database.db')
-    gpt_response = "Ответ от GPT"
-    update_user_data(user_id, gpt_response=gpt_response)
+def send_welcome(message: tgp.Message):
+    bot.send_message(chat_id=message.chat.id, text="Выберите предмет:",
+                     reply_markup=keyboard_gen(ai_modes))
+    bot.register_next_step_handler(message, send_ai_answer)
 
-@bot.message_handler(commands=['select_profile'])
-def select_profile(message):
-    user_id = message.chat.id
-    markup = types.InlineKeyboardMarkup()
-    for subject in themes_and_levels.keys():
-        markup.add(types.InlineKeyboardButton(subject, callback_data=f"subject_{subject}"))
-    bot.send_message(user_id, "Выберите предмет:", reply_markup=markup)
-@bot.callback_query_handler(func=lambda call: call.data.startswith('subject_'))
-def handle_subject_selection(call):
-    selected_subject = call.data.replace('subject_', '')
-    user_id = call.message.chat.id
-    levels = themes_and_levels.get(selected_subject, {})
-    markup = types.InlineKeyboardMarkup()
-    for level in levels.keys():
-        markup.add(types.InlineKeyboardButton(level, callback_data=f"level_{selected_subject}_{level}"))
-    bot.send_message(user_id, f"Выбран предмет: {selected_subject}. Теперь выберите уровень:", reply_markup=markup)
+@bot.message_handler(content_types=["text"], func=lambda message: False)
+def send_ai_answer(message: tgp.Message):
+    if not sql.has_user(message.chat.id):
+        sql.create_user(message.chat.id)
+    sql.set_ai(message.chat.id, message.text)
+    bot.send_message(chat_id=message.chat.id, text="Выберете сложность задачи: ", reply_markup=keyboard_gen(["Новичок", "Профисионал"]))
+    bot.register_next_step_handler(message, send_ai_level)
 
+@bot.message_handler(content_types=["text"], func=lambda message: False)
+def send_ai_level(message: tgp.Message):
+    sql.set_level(message.chat.id, message.text)
+    bot.send_message(chat_id=message.chat.id, text="Напишите задачу: ")
+    bot.register_next_step_handler(message, send_ai_request_answer)
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith('level_'))
-def handle_level_selection(call):
-    selected_subject_level = call.data.replace('level_', '')
-    user_id = call.message.chat.id
-    selected_subject, level = selected_subject_level.split('_')
+@bot.message_handler(content_types=["text"], func=lambda message: False)
+def send_ai_request_answer(message: tgp.Message):
+    ai_answer = bot.send_message(chat_id=message.chat.id, text="Нейросеть думает")
+    json_parser = json.loads(sql.get_history(message.chat.id))
+    story = [
+        gpt.make_message("system", "Answer in Russian and do not translate the text into another language"),
+        gpt.make_message("system", ai_desc[sql.get_mode(message.chat.id)]),
+        gpt.make_message("assistant", "Решим задачу по шагам: "),
+        gpt.make_message("assistant", json_parser["assistant"]),
+        gpt.make_message(gpt.make_message("user", level_desc[sql.get_level(message.chat.id)])),
+        gpt.make_message(gpt.make_message("user", json_parser["user"]+" "+message.text))
+    ]
+    rep = gpt.send_request(gpt.make_prompt(story))
+    text = gpt.get_request(rep)
+    next_story={
+        "user": json_parser["user"]+" "+message.text,
+        "assistant": json_parser["assistant"]+" "+message.text
+    }
+    _sql.set_gpt_history(message.chat.id, json.dumps(next_story))
+    bot.edit_message_text(chat_id=message.chat.id, message_id=ai_answer.message_id, text=text)
+    bot.send_message(chat_id=message.chat.id, reply_to_message_id=message.message_id, text="Сообщение доставлено",
+                     reply_markup=keyboard_gen(["Продолжить", "Закончить"]))
+    bot.register_next_step_handler(message, send_ai_question)
 
-    # Сохраняем выбранный предмет и уровень в user_data
-    add_user_data(user_id, selected_subject, level, "", "", db_name='bot_database.db')
-
-    bot.send_message(user_id, f"Выбран профиль: {selected_subject} - {level}")
-
-@bot.message_handler(commands=['continue'])
-def continue_solve_task(message):
-    user_id = message.from_user.id
-    if user_id not in users_history or not users_history[user_id]['user_request']:
-        bot.send_message(user_id, "Нет предыдущего запроса для продолжения.")
-        return
-
-    user_request = users_history[user_id]['user_request']
-    json = gpt.make_promt(user_request)
-    resp = gpt.send_request(json)
-    response = gpt.process_resp(resp)
-
-    if not response[0]:
-        bot.send_message(user_id, "Не удалось выполнить запрос...")
+@bot.message_handler(content_types=["text"], func=lambda message: False)
+def send_ai_question(message: tgp.Message):
+    if message.text == "Закончить":
+        bot.register_next_step_handler(message, send_welcome)
+    elif message.text == "Продолжить":
+        bot.register_next_step_handler(message, send_ai_request_answer)
     else:
-        bot.send_message(user_id, response[1])
-        gpt.clear_history()
+        bot.register_next_step_handler(message, send_ai_request_answer)
 
-@bot.message_handler(commands=['debug'])
-def send_debug_info(message):
-    user_id = message.from_user.id
-    try:
-        with open('gpt_errors.log', 'rb') as file:
-            bot.send_document(user_id, file)
-    except FileNotFoundError:
-        bot.send_message(user_id, "Файл логов не найден.")
-
-bot.polling()
+if __name__ == "__main__":
+    print("Бот запускается....")
+    bot.polling()
