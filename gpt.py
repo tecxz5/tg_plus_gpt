@@ -16,7 +16,7 @@ def make_message(role: str, content: str) -> dict:
 
 
 def send_request(json: dict) -> requests.Response:
-    url = "http://localhost:1234/v1/chat/completions"
+    url = GPT.PY
     headers = {"Content-Type": "application/json"}
     response = requests.request("POST", url, json=json, headers=headers)
     return response
