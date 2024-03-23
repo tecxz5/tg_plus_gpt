@@ -24,3 +24,7 @@ def help(message):
 def null(message):
     bot.send_message(message.chat.id,
                      text="Команда-заглушка, пока не работает")
+
+if __name__ == "__main__":
+    print("Бот запускается....")
+    bot.polling()
