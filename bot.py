@@ -4,7 +4,7 @@ from config import TOKEN
 
 bot = telebot.TeleBot(TOKEN)
 
-@bot.messsage_handler(commands=['start'])
+@bot.message_handler(commands=['start'])
 def start(message):
     user_name = message.from_user.first_name
     bot.send_message(message.chat.id,
@@ -20,7 +20,22 @@ def help(message):
 Все запросы генерируются через YaGPT, и из-за этого не все могут воспользоваться генерацией текста, так что не расстраивайтесь, если вы не из этих людей
 Так же можно проверить есть ли вы в этом списке с помощью команды /whitelist""")
 
-@bot.message_handler(commands=['whitelist, debug, new_story, end_story'])
+@bot.message_handler(commands=['whitelist'])
+def null(message):
+    bot.send_message(message.chat.id,
+                     text="Команда-заглушка, пока не работает")
+
+@bot.message_handler(commands=['debug'])
+def null(message):
+    bot.send_message(message.chat.id,
+                     text="Команда-заглушка, пока не работает")
+
+@bot.message_handler(commands=['new_story'])
+def null(message):
+    bot.send_message(message.chat.id,
+                     text="Команда-заглушка, пока не работает")
+
+@bot.message_handler(commands=['end_story'])
 def null(message):
     bot.send_message(message.chat.id,
                      text="Команда-заглушка, пока не работает")
