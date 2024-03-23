@@ -1,4 +1,0 @@
-requests==2.26.0
-transformers==4.12.5
-telebot==0.0.5
-flax==0.8.1

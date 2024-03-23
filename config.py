@@ -1,3 +1,0 @@
-TOKEN = ""
-MAX_TOKENS = 
-GPT_URL = ""
