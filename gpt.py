@@ -1,6 +1,6 @@
 import enum
 import requests
-
+from config import GPT_TOKEN, GPT_URL
 
 class Role(enum.StrEnum):
     assistant = "assistant",
@@ -33,9 +33,9 @@ class Prompt:
 
 class PyYandexGpt:
     def __init__(self, token, folder_id: str, gpt: str):
-        self.token = token
-        self.folder_id = folder_id
-        self.gpt = gpt
+        self.token = GPT_TOKEN
+        self.folder_id = GPT_URL
+        self.gpt = 'yandexgpt-lite'
         self.history = {}
 
 
