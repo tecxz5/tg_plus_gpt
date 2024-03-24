@@ -49,9 +49,13 @@ def whitelist(message):
 
 @bot.message_handler(commands=['debug'])
 def debug(message):
-    bot.send_message(message.chat.id,
-                     text="Планируется высылание логов")
-
+    chat_id = message.chat.id
+    try:
+        with open('bot_logs.log', 'rb') as log_file:
+            bot.send_document(chat_id, log_file)
+        bot.send_message(chat_id, "Файл с логами отправлен.")
+    except Exception as e:
+        bot.send_message(chat_id, f"Ошибка при отправке файла с логами: {e}")
 
 @bot.message_handler(commands=['new_story'])
 @private_access()
@@ -72,6 +76,7 @@ def handle_text_message(message):
     response = gpt_client.create_request(chat_id, prompt)
     if response.status_code == 200:
         try:
+            response_json = response.json()
             result_text = response_json['result']['alternatives'][0]['message']['text']
             bot.send_message(chat_id, result_text)
         except KeyError:
@@ -83,4 +88,5 @@ def handle_text_message(message):
 
 if __name__ == "__main__":
     print("Бот запускается...")
+    logging.info("Бот запускается...")
     bot.polling()
