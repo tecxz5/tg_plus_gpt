@@ -1,8 +1,11 @@
 import telebot
 import gpt
-from config import TOKEN
+from config import TOKEN, WHITELISTED_USERS
 
 bot = telebot.TeleBot(TOKEN)
+
+def is_user_whitelisted(chat_id):
+    return chat_id in WHITELISTED_USERS
 
 @bot.message_handler(commands=['start'])
 def start(message):
@@ -21,9 +24,13 @@ def help(message):
 Так же можно проверить есть ли вы в этом списке с помощью команды /whitelist""")
 
 @bot.message_handler(commands=['whitelist'])
-def null(message):
-    bot.send_message(message.chat.id,
-                     text="Команда-заглушка, пока не работает")
+def whitelist(message):
+    chat_id = message.chat.id
+    if is_user_whitelisted(chat_id):
+        # Логика команды для разрешенных пользователей
+        bot.send_message(chat_id, 'У вас есть доступ к YaGPT')
+    else:
+        bot.send_message(chat_id, 'У вас нету доступа к YaGPT')
 
 @bot.message_handler(commands=['debug'])
 def null(message):
