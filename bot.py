@@ -78,6 +78,7 @@ def handle_text_message(message):
         try:
             response_json = response.json()
             result_text = response_json['result']['alternatives'][0]['message']['text']
+            logging.info(result_text)
             bot.send_message(chat_id, result_text)
         except KeyError:
             logging.error('Ответ от API GPT не содержит ключа "result"')
@@ -86,7 +87,9 @@ def handle_text_message(message):
         logging.error(f'Ошибка API GPT: {response.status_code}')
         bot.send_message(chat_id, f"""
 Извините, произошла ошибка при обращении к API GPT.
-Ошибка: {response.status_code}""")
+Ошибка: {response.status_code}
+||Если ошибка 429 - нейросеть просит не так часто писать промпты||""",
+                         parse_mode='MarkdownV2')
 
 if __name__ == "__main__":
     print("Бот запускается...")
