@@ -72,7 +72,10 @@ class PyYandexGpt:
                 "temperature": 0.6,
                 "maxTokens": "100"
             },
-            "messages": [{"role": "user", "text": prompt}]
+            "messages": [{"role":"system",
+                          "text":"Ты - сценарист, прописывай текст с мелочайшей деталью ко всему"},
+                        {"role": "user",
+                          "text": prompt}]
         }
 
         # Логирование данных запроса
