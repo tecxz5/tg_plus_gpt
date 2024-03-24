@@ -65,10 +65,16 @@ def handle_text_message(message):
     text = message.text # Получаем текст сообщения от пользователя
     prompt = text # Используем текст сообщения как prompt
     response = gpt_client.create_request(chat_id, prompt)
-    if response:
-        bot.send_message(chat_id, response["result"])
+    if response.status_code == 200:
+        try:
+            result_text = response_json['result']['alternatives'][0]['message']['text']
+            bot.send_message(chat_id, result_text)
+        except KeyError:
+            logging.error('Ответ от API GPT не содержит ключа "result"')
+            bot.send_message(chat_id, "Извините, не удалось сгенерировать историю.")
     else:
-        bot.send_message(chat_id, "Извините, не удалось сгенерировать историю.")
+        logging.error(f'Ошибка API GPT: {response.status_code}')
+        bot.send_message(chat_id, "Извините, произошла ошибка при обращении к API GPT.")
 
 @bot.message_handler(commands=['end_story'])
 def null(message):
@@ -76,5 +82,5 @@ def null(message):
                      text="Команда-заглушка, пока не работает")
 
 if __name__ == "__main__":
-    print("Бот запускается....")
-    bot.infinity_polling()
+    print("Бот запускается...")
+    bot.polling()
