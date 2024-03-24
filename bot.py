@@ -48,9 +48,9 @@ def whitelist(message):
         bot.send_message(chat_id, 'У вас нету доступа к YaGPT')
 
 @bot.message_handler(commands=['debug'])
-def null(message):
+def debug(message):
     bot.send_message(message.chat.id,
-                     text="Команда-заглушка, пока не работает")
+                     text="Планируется высылание логов")
 
 
 @bot.message_handler(commands=['new_story'])
