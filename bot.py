@@ -84,7 +84,9 @@ def handle_text_message(message):
             bot.send_message(chat_id, "Извините, не удалось сгенерировать историю.")
     else:
         logging.error(f'Ошибка API GPT: {response.status_code}')
-        bot.send_message(chat_id, "Извините, произошла ошибка при обращении к API GPT.")
+        bot.send_message(chat_id, f"""
+Извините, произошла ошибка при обращении к API GPT.
+Ошибка: {response.status_code}""")
 
 if __name__ == "__main__":
     print("Бот запускается...")
