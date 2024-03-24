@@ -43,13 +43,16 @@ def null(message):
 @bot.message_handler(commands=['new_story'])
 def new_story(message):
     chat_id = message.chat.id
+    text = message.text
     if is_user_whitelisted(chat_id):
-        prompt = "Напишите историю о..."
+        prompt = text
         response = gpt_client.create_request(chat_id, prompt)
         logging.debug(f"Получен ответ: {response.text}")
-        if response:
-            bot.send_message(chat_id, response["result"])
-        else:
+        response_json = response.json()
+        try:
+            result_text = response_json['result']['alternatives'][0]['message']['text']
+            bot.send_message(chat_id, result_text)
+        except KeyError:
             bot.send_message(chat_id, "Извините, не удалось сгенерировать историю.")
     else:
         bot.send_message(chat_id, 'У вас нету доступа к YaGPT')
@@ -61,4 +64,4 @@ def null(message):
 
 if __name__ == "__main__":
     print("Бот запускается....")
-    bot.polling()
+    bot.infinity_polling()
