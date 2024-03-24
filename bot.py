@@ -59,6 +59,11 @@ def new_story(message):
     chat_id = message.chat.id
     bot.send_message(chat_id, "Пожалуйста, введите текст для истории:")
 
+@bot.message_handler(commands=['end_story'])
+def null(message):
+    bot.send_message(message.chat.id,
+                     text="Команда-заглушка, пока не работает")
+
 @bot.message_handler(func=lambda message: True, content_types=['text'])
 def handle_text_message(message):
     chat_id = message.chat.id
@@ -75,11 +80,6 @@ def handle_text_message(message):
     else:
         logging.error(f'Ошибка API GPT: {response.status_code}')
         bot.send_message(chat_id, "Извините, произошла ошибка при обращении к API GPT.")
-
-@bot.message_handler(commands=['end_story'])
-def null(message):
-    bot.send_message(message.chat.id,
-                     text="Команда-заглушка, пока не работает")
 
 if __name__ == "__main__":
     print("Бот запускается...")

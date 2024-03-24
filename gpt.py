@@ -76,6 +76,7 @@ class PyYandexGpt:
         # Логирование данных запроса
         logging.debug(f"Отправляем запрос к API GPT с данными: {data}")
         return requests.request("POST", url, json=data, headers=headers)
+
     def response(self, rep: requests.Response, user_id: int) -> dict:
         if rep.status_code != 200:
             raise YandexGptError("Response status code: " + str(rep.status_code))
