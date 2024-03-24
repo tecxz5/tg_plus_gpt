@@ -54,7 +54,7 @@ class PyYandexGpt:
     def get_history(self, user_id: int) -> [Prompt]:
         return self.history[user_id]
 
-    def create_request(self, user_id: int) -> requests.Response:
+    def create_request(self, user_id: int, prompt: str) -> requests.Response:
         url = f"https://llm.api.cloud.yandex.net/foundationModels/v1/completion"
         headers = {
             'Authorization': f'Bearer {self.token}',
@@ -67,13 +67,9 @@ class PyYandexGpt:
                 "temperature": 0.6,
                 "maxTokens": 100
             },
-            "messages": []
+            "messages": [{"role": "user", "content": prompt}]
         }
-        prompts = []
-        for prompt in self.get_history(user_id):
-            prompts.append(prompt.to_dict())
-
-        return requests.request("POST", url, data=data, headers=headers)
+        return requests.request("POST", url, json=data, headers=headers)
 
     def response(self, rep: requests.Response, user_id: int) -> dict:
         if rep.status_code != 200:
