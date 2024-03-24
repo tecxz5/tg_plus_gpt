@@ -7,6 +7,7 @@ from config import TOKEN, WHITELISTED_USERS, GPT_TOKEN, GPT_URL
 bot = telebot.TeleBot(TOKEN)
 gpt_client = PyYandexGpt(GPT_TOKEN, GPT_URL, 'yandexgpt-lite')
 logging.basicConfig(level=logging.DEBUG)
+user_sessions = {}
 
 def is_user_whitelisted(chat_id):
     return chat_id in WHITELISTED_USERS
@@ -19,7 +20,7 @@ def private_access():
             if is_user_whitelisted(user_id):
                 return f(message, *args, **kwargs)
             else:
-                bot.reply_to(message, text='У вас нету доступа к YaGPT')
+                bot.reply_to(message, text='У вас нету доступа к этой команде/функционалу!')
         return f_restrict
     return deco_restrict
 
@@ -61,31 +62,41 @@ def debug(message):
 @private_access()
 def new_story(message):
     chat_id = message.chat.id
+    user_sessions[chat_id] = True
     bot.send_message(chat_id, "Пожалуйста, введите текст для истории:")
 
 @bot.message_handler(commands=['end_story'])
-def null(message):
-    bot.send_message(message.chat.id,
-                     text="Команда-заглушка, пока не работает")
+def end_history(message):
+    chat_id = message.chat.id
+    if chat_id not in user_sessions or not user_sessions[chat_id]:
+        bot.send_message(chat_id, "Вы не начали новую историю. Напишите /new_story для начала.")
+        return
+    user_sessions[chat_id] = False
+    bot.send_message(chat_id, "История закончена")
 
 @bot.message_handler(func=lambda message: True, content_types=['text'])
 def handle_text_message(message):
     chat_id = message.chat.id
-    text = message.text # Получаем текст сообщения от пользователя
-    prompt = text # Используем текст сообщения как prompt
-    response = gpt_client.create_request(chat_id, prompt)
-    if response.status_code == 200:
-        try:
-            response_json = response.json()
-            result_text = response_json['result']['alternatives'][0]['message']['text']
-            logging.info(result_text)
-            bot.send_message(chat_id, result_text)
-        except KeyError:
-            logging.error('Ответ от API GPT не содержит ключа "result"')
-            bot.send_message(chat_id, "Извините, не удалось сгенерировать историю.")
+    if chat_id not in user_sessions or not user_sessions[chat_id]:
+        # Если сессия не активирована, игнорируем сообщение
+        bot.send_message(chat_id, "Вы не начали новую историю. Напишите /new_story для начала.")
+        return
     else:
-        logging.error(f'Ошибка API GPT: {response.status_code}')
-        bot.send_message(chat_id, f"""
+        text = message.text # Получаем текст сообщения от пользователя
+        prompt = text # Используем текст сообщения как prompt
+        response = gpt_client.create_request(chat_id, prompt)
+        if response.status_code == 200:
+            try:
+                response_json = response.json()
+                result_text = response_json['result']['alternatives'][0]['message']['text']
+                logging.info(result_text)
+                bot.send_message(chat_id, result_text)
+            except KeyError:
+                logging.error('Ответ от API GPT не содержит ключа "result"')
+                bot.send_message(chat_id, "Извините, не удалось сгенерировать историю.")
+        else:
+            logging.error(f'Ошибка API GPT: {response.status_code}')
+            bot.send_message(chat_id, f"""
 Извините, произошла ошибка при обращении к API GPT.
 Ошибка: {response.status_code}
 ||Если ошибка 429 - нейросеть просит не так часто писать промпты||""",
