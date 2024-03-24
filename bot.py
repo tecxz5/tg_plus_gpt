@@ -2,17 +2,19 @@ import telebot
 import logging
 from functools import wraps
 from gpt import PyYandexGpt
+from database_manager import DatabaseManager
 from config import TOKEN, WHITELISTED_USERS, GPT_TOKEN, GPT_URL
 
 bot = telebot.TeleBot(TOKEN)
-gpt_client = PyYandexGpt(GPT_TOKEN, GPT_URL, 'yandexgpt-lite')
+db_manager = DatabaseManager("tokens_sessions.db")
+gpt_client = PyYandexGpt(GPT_TOKEN, GPT_URL, 'yandexgpt-lite') # не самое верное стратегическое решение но всё же
 logging.basicConfig(level=logging.DEBUG)
 user_sessions = {}
 
-def is_user_whitelisted(chat_id):
+def is_user_whitelisted(chat_id): # используется в /whitelist и декораторе
     return chat_id in WHITELISTED_USERS
 
-def private_access():
+def private_access(): # декоратор работающий на одну команду, на других ноет что не работает, да и не надо
     def deco_restrict(f):
         @wraps(f)
         def f_restrict(message, *args, **kwargs):
@@ -20,7 +22,7 @@ def private_access():
             if is_user_whitelisted(user_id):
                 return f(message, *args, **kwargs)
             else:
-                bot.reply_to(message, text='У вас нету доступа к этой команде/функционалу!')
+                bot.reply_to(message, text='У вас нету доступа к этой команде!')
         return f_restrict
     return deco_restrict
 
@@ -48,7 +50,7 @@ def whitelist(message):
     else:
         bot.send_message(chat_id, 'У вас нету доступа к YaGPT')
 
-@bot.message_handler(commands=['debug'])
+@bot.message_handler(commands=['debug'])  # примерно то же самое что было в первом дз, только без заморочек
 def debug(message):
     chat_id = message.chat.id
     try:
@@ -59,7 +61,7 @@ def debug(message):
         bot.send_message(chat_id, f"Ошибка при отправке файла с логами: {e}")
 
 @bot.message_handler(commands=['new_story'])
-@private_access()
+@private_access() # это же тот самый декоратор чтоооооо
 def new_story(message):
     chat_id = message.chat.id
     user_sessions[chat_id] = True
@@ -69,7 +71,7 @@ def new_story(message):
 def end_history(message):
     chat_id = message.chat.id
     if chat_id not in user_sessions or not user_sessions[chat_id]:
-        bot.send_message(chat_id, "Вы не начали новую историю. Напишите /new_story для начала.")
+        bot.send_message(chat_id, "Вы не начали новую историю. Напишите /new_story для начала.") # горжусь этой функцией
         return
     user_sessions[chat_id] = False
     bot.send_message(chat_id, "История закончена")
@@ -79,7 +81,7 @@ def handle_text_message(message):
     chat_id = message.chat.id
     if chat_id not in user_sessions or not user_sessions[chat_id]:
         # Если сессия не активирована, игнорируем сообщение
-        bot.send_message(chat_id, "Вы не начали новую историю. Напишите /new_story для начала.")
+        bot.send_message(chat_id, "Вы не начали новую историю. Напишите /new_story для начала.") # горжусь этой функцией
         return
     else:
         text = message.text # Получаем текст сообщения от пользователя

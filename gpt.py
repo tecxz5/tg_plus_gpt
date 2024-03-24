@@ -5,7 +5,7 @@ from config import GPT_TOKEN, GPT_URL
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(filename='bot_logs.log', level=logging.DEBUG,
-                    format='%(asctime)s - %(levelname)s - %(message)s')
+                    format='%(asctime)s - %(levelname)s - %(message)s')  # логер
 
 class Role(enum.StrEnum):
     assistant = "assistant",
