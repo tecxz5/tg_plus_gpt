@@ -1,5 +1,6 @@
 import telebot
 import logging
+from functools import wraps
 from gpt import PyYandexGpt
 from config import TOKEN, WHITELISTED_USERS, GPT_TOKEN, GPT_URL
 
@@ -9,6 +10,18 @@ logging.basicConfig(level=logging.DEBUG)
 
 def is_user_whitelisted(chat_id):
     return chat_id in WHITELISTED_USERS
+
+def private_access():
+    def deco_restrict(f):
+        @wraps(f)
+        def f_restrict(message, *args, **kwargs):
+            user_id = message.from_user.id
+            if is_user_whitelisted(user_id):
+                return f(message, *args, **kwargs)
+            else:
+                bot.reply_to(message, text='У вас нету доступа к YaGPT')
+        return f_restrict
+    return deco_restrict
 
 @bot.message_handler(commands=['start'])
 def start(message):
@@ -41,21 +54,21 @@ def null(message):
 
 
 @bot.message_handler(commands=['new_story'])
+@private_access()
 def new_story(message):
     chat_id = message.chat.id
-    text = message.text
-    if is_user_whitelisted(chat_id):
-        prompt = text
-        response = gpt_client.create_request(chat_id, prompt)
-        logging.debug(f"Получен ответ: {response.text}")
-        response_json = response.json()
-        try:
-            result_text = response_json['result']['alternatives'][0]['message']['text']
-            bot.send_message(chat_id, result_text)
-        except KeyError:
-            bot.send_message(chat_id, "Извините, не удалось сгенерировать историю.")
+    bot.send_message(chat_id, "Пожалуйста, введите текст для истории:")
+
+@bot.message_handler(func=lambda message: True, content_types=['text'])
+def handle_text_message(message):
+    chat_id = message.chat.id
+    text = message.text # Получаем текст сообщения от пользователя
+    prompt = text # Используем текст сообщения как prompt
+    response = gpt_client.create_request(chat_id, prompt)
+    if response:
+        bot.send_message(chat_id, response["result"])
     else:
-        bot.send_message(chat_id, 'У вас нету доступа к YaGPT')
+        bot.send_message(chat_id, "Извините, не удалось сгенерировать историю.")
 
 @bot.message_handler(commands=['end_story'])
 def null(message):
