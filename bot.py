@@ -2,7 +2,7 @@ import telebot
 import logging
 from functools import wraps
 from gpt import PyYandexGpt
-from database import Database
+from database_token import Database
 from config import TOKEN, WHITELISTED_USERS, GPT_TOKEN, GPT_URL
 
 bot = telebot.TeleBot(TOKEN)
@@ -97,6 +97,8 @@ def handle_text_message(message):
         text = message.text # Получаем текст сообщения от пользователя
         prompt = text # Используем текст сообщения как prompt
         tokens_count = gpt_client.count_tokens(text)
+        db.deduct_tokens(chat_id, tokens_count)
+        db.update_tokens_used(chat_id, tokens_count)
         logging.info(f"Кол-во токенов: {tokens_count}")
         response = gpt_client.create_request(chat_id, prompt)
         if response.status_code == 200:

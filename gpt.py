@@ -73,7 +73,7 @@ class PyYandexGpt:
                 "maxTokens": "100"
             },
             "messages": [{"role":"system",
-                          "text":"Ты - сценарист, прописывай текст с мелочайшей деталью ко всему"},
+                          "text":"Ты - сценарист, пиши эпос, не драму"},
                         {"role": "user",
                           "text": prompt}]
         }
