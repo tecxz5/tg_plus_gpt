@@ -13,6 +13,9 @@ logging.basicConfig(level=logging.DEBUG)
 user_sessions = {}
 current_state = {}
 dbt.create_tables()
+genre = ""
+main_person = ""
+setting = ""
 
 def is_user_whitelisted(chat_id): # используется в /whitelist и декораторе
     return chat_id in WHITELISTED_USERS
@@ -90,14 +93,16 @@ def used_tokens_handler(message):
 @bot.message_handler(commands=['new_story'])
 @private_access() # это преграждает путь если пользователь не в вайтлисте
 def send_genre_keyboard(message):
+    chat_id = message.chat.id
+    user_sessions[chat_id] = True
     markup = create_genre_keyboard()
     bot.send_message(message.chat.id, "Краткая сводка по жанрам:\n"
 "- Фэнтези: жанр литературы, в котором используются элементы магии, фантастические существа и мифология для создания волшебных миров и сюжетов.\n"
 "- Научная фантастика: жанр, в котором автор использует научные и технологические концепции для создания футуристических миров и историй, часто затрагивающих вопросы будущего развития человечества.\n"
 "- Детектив: жанр, основанный на расследовании преступлений и разгадывании загадок, часто сосредоточенных на действиях детектива или сыщика.\n"
 "- Боевик: жанр, в котором акцент делается на динамичных сценах схваток и борьбы, преимущественно в контексте физического противостояния и действий героев.")
-    bot.send_message(message.chat.id, "Выберите жанр:", reply_markup=markup)
-    current_state[message.chat.id] = 'genre'
+    bot.send_message(chat_id, "Выберите жанр:", reply_markup=markup)
+    current_state[chat_id] = 'genre'
 
 @bot.message_handler(commands=['end_story'])
 def end_history(message):
@@ -111,25 +116,26 @@ def end_history(message):
 
 @bot.message_handler(func=lambda message: True)
 def handle_genre_choice(message):
-    genre = ""  # Инициализация переменной с пустым значением
-    main_person = ""  # Инициализация переменной с пустым значением
-    setting = ""  # Инициализация переменной с пустым значением
-    if current_state.get(message.chat.id) == 'genre':
+    global genre, main_person, setting
+    chat_id = message.chat.id
+    if current_state.get(chat_id) == 'genre':
         genre = message.text
         markup = create_character_keyboard()
-        bot.send_message(message.chat.id, f"Жанр: {genre}\nВыберите персонажа:", reply_markup=markup)
-        current_state[message.chat.id] = 'character'
-    elif current_state.get(message.chat.id) == 'character':
+        bot.send_message(chat_id, f"Жанр: {genre}\nВыберите персонажа:", reply_markup=markup)
+        current_state[chat_id] = 'character'
+    elif current_state.get(chat_id) == 'character':
         main_person = message.text
         markup = create_setting_keyboard()
-        bot.send_message(message.chat.id, f"Главный герой: {main_person}\nВыберите сеттинг:", reply_markup=markup)
-        current_state[message.chat.id] = 'setting'
-    elif current_state.get(message.chat.id) == 'setting':
+        bot.send_message(chat_id, f"Главный герой: {main_person}\nВыберите сеттинг:", reply_markup=markup)
+        current_state[chat_id] = 'setting'
+    elif current_state.get(chat_id) == 'setting':
         setting = message.text
         final_choice = f"Жанр: {genre}, Главный герой: {main_person}, Сеттинг: {setting}"
-        current_state[message.chat.id] = None
-        bot.send_message(message.chat.id,
+        current_state[chat_id] = None
+        bot.send_message(chat_id,
                          f"Вы сделали выбор:\n{final_choice}\nТеперь, пожалуйста, введите текст для истории:")
+        bot.register_next_step_handler(message, handle_text_message)
+        return final_choice
 
 @bot.message_handler(func=lambda message: True, content_types=['text'])
 def handle_text_message(message):
@@ -139,7 +145,7 @@ def handle_text_message(message):
         return
     else:
         text = message.text # Получаем текст сообщения от пользователя
-        final_choice = handle_character_choice(message)
+        final_choice = handle_genre_choice(message)
         system_text = f"Ты - сценарист, пиши эпос, вот общие очертания для истории: {final_choice}"
         prompt = [{"role":"system",
                           "text": system_text},
