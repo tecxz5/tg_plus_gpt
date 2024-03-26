@@ -24,14 +24,16 @@ class Database:
         self.conn.close()
 
     def add_new_session(self, chat_id):
-        self.cursor.execute("INSERT INTO sessions (chat_id, sessions_count, tokens) VALUES (?, ?, ?) ON CONFLICT(chat_id) DO UPDATE SET sessions_count = sessions_count + 1, tokens = 1000", (chat_id, 1, 1000))
+        # Увеличиваем количество сессий на 1 и устанавливаем начальное количество токенов в 500
+        self.cursor.execute("INSERT INTO sessions (chat_id, sessions_count, tokens) VALUES (?, ?, ?) ON CONFLICT(chat_id) DO UPDATE SET sessions_count = sessions_count + 1, tokens = 500", (chat_id, 1, 500))
         self.conn.commit()
         self.conn.close()
 
     def update_tokens_used(self, chat_id, tokens_used):
         self.cursor.execute("UPDATE tokens_used SET tokens_used = ? WHERE chat_id = ?", (tokens_used, chat_id))
         self.conn.commit()
-        sels.conn.close()
+        self.conn.close()
+
     def get_tokens_used(self, chat_id):
         self.cursor.execute("SELECT tokens_used FROM tokens_used WHERE chat_id = ?", (chat_id,))
         result = self.cursor.fetchone()
