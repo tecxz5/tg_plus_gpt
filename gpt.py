@@ -70,7 +70,7 @@ class PyYandexGpt:
             "completionOptions": {
                 "stream": False,
                 "temperature": 0.6,
-                "maxTokens": "100"
+                "maxTokens": "200"
             },
             "messages": [{"role":"system",
                           "text":"Ты - сценарист, пиши эпос, не драму"},
@@ -113,7 +113,7 @@ class PyYandexGpt:
         }
         data = {
             "modelUri": f"gpt://{folder_id}/yandexgpt/latest",  # указываем folder_id
-            "maxTokens": "100",
+            "maxTokens": "500",
             "text": text  # text - тот текст, в котором мы хотим посчитать токены
         }
         return len(
