@@ -61,10 +61,19 @@ def debug(message):
     except Exception as e:
         bot.send_message(chat_id, f"Ошибка при отправке файла с логами: {e}")
 
+@bot.message_handler(commands=['used_tokens'])
+def used_tokens(message):
+    bot.send_message(chat.id, text= "Команда заглушка, планируется вывод использованных токенов")
+
 @bot.message_handler(commands=['new_story'])
-@private_access() # это же тот самый декоратор чтоооооо
+@private_access() # это преграждает путь если пользователь не в вайтлисте
 def new_story(message):
     chat_id = message.chat.id
+    # проверка на наличие профиля
+    user_profile = db.get_user_profile(chat_id)
+    if not user_profile:
+        # создаем профиль
+        db.create_user_profile(chat_id)
     user_sessions[chat_id] = True
     bot.send_message(chat_id, "Пожалуйста, введите текст для истории:")
 
@@ -75,6 +84,7 @@ def end_history(message):
         bot.send_message(chat_id, "Вы не начали новую историю. Напишите /new_story для начала.") # горжусь этой функцией
         return
     user_sessions[chat_id] = False
+    db.reset_session(chat_id)
     bot.send_message(chat_id, "История закончена")
 
 @bot.message_handler(func=lambda message: True, content_types=['text'])
