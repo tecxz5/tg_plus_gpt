@@ -6,7 +6,7 @@ from database_manager import DatabaseManager
 from config import TOKEN, WHITELISTED_USERS, GPT_TOKEN, GPT_URL
 
 bot = telebot.TeleBot(TOKEN)
-db_manager = DatabaseManager("tokens_sessions.db")
+db = DatabaseManager("tokens_sessions.db")
 gpt_client = PyYandexGpt(GPT_TOKEN, GPT_URL, 'yandexgpt-lite') # не самое верное стратегическое решение но всё же
 logging.basicConfig(level=logging.DEBUG)
 user_sessions = {}
