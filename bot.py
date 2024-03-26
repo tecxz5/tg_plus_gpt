@@ -70,7 +70,7 @@ def used_tokens(message):
 def new_story(message):
     chat_id = message.chat.id
     # проверка на наличие профиля
-    user_profile = db.get_user_profile(chat_id)
+    user_profile = db.get_user_data(chat_id)
     if not user_profile:
         # создаем профиль
         db.create_user_profile(chat_id)
@@ -97,7 +97,7 @@ def handle_text_message(message):
         text = message.text # Получаем текст сообщения от пользователя
         prompt = text # Используем текст сообщения как prompt
         tokens_count = gpt_client.count_tokens(text)
-        print(f"Количество токенов: {tokens_count}")
+        logging.info(f"Кол-во токенов: {tokens_count}")
         response = gpt_client.create_request(chat_id, prompt)
         if response.status_code == 200:
             try:
@@ -113,7 +113,7 @@ def handle_text_message(message):
             bot.send_message(chat_id, f"""
 Извините, произошла ошибка при обращении к API GPT.
 Ошибка: {response.status_code}
-||Если ошибка 429 - нейросеть просит не так часто писать промпты||""",
+||Если ошибка 429 - нейросеть просит не так часто писать промпты либо же она нагружена||""",
                          parse_mode='MarkdownV2')
 
 if __name__ == "__main__":

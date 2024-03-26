@@ -124,6 +124,7 @@ class PyYandexGpt:
             ).json()['tokens']
         )
         try:
+            logging.info(f"Ответ от counter tokens: {len(json)}")
             tokens = response.json().get('tokens', [])
             return len(tokens)
         except KeyError:
