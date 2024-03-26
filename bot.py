@@ -1,5 +1,6 @@
 import telebot
 import logging
+from telebot import types
 from functools import wraps
 from gpt import PyYandexGpt
 from database_token import Database
@@ -10,6 +11,7 @@ dbt = Database("tokens.db")
 gpt_client = PyYandexGpt(GPT_TOKEN, GPT_URL, 'yandexgpt-lite') # не самое верное стратегическое решение но всё же
 logging.basicConfig(level=logging.DEBUG)
 user_sessions = {}
+current_state = {}
 dbt.create_tables()
 
 def is_user_whitelisted(chat_id): # используется в /whitelist и декораторе
@@ -26,6 +28,24 @@ def private_access(): # декоратор работающий на одну к
                 bot.reply_to(message, text='У вас нету доступа к этой команде!')
         return f_restrict
     return deco_restrict
+
+# Создание клавиатуры для выбора жанра
+def create_genre_keyboard():
+    markup = types.ReplyKeyboardMarkup(row_width=2)
+    markup.add(types.KeyboardButton('Фентези'), types.KeyboardButton('Научная фантастика'), types.KeyboardButton('Детектив'), types.KeyboardButton('Боевик'))
+    return markup
+
+# Создание клавиатуры для выбора персонажей
+def create_character_keyboard():
+    markup = types.ReplyKeyboardMarkup(row_width=2)
+    markup.add(types.KeyboardButton('Анна'), types.KeyboardButton('Алексей'), types.KeyboardButton('Мария'), types.KeyboardButton('Иван'))
+    return markup
+
+# Создание клавиатуры для выбора сеттинга
+def create_setting_keyboard():
+    markup = types.ReplyKeyboardMarkup(row_width=2)
+    markup.add(types.KeyboardButton('Постапокалипсис'), types.KeyboardButton('Пустыня'), types.KeyboardButton('Город'))
+    return markup
 
 @bot.message_handler(commands=['start'])
 def start(message):
@@ -69,15 +89,31 @@ def used_tokens_handler(message):
 
 @bot.message_handler(commands=['new_story'])
 @private_access() # это преграждает путь если пользователь не в вайтлисте
-def new_story(message):
-    chat_id = message.chat.id
-    # проверка на наличие профиля
-    user_profile = dbt.get_user_data(chat_id)
-    if not user_profile:
-        # создаем профиль
-        dbt.create_user_profile(chat_id)
-    user_sessions[chat_id] = True
-    bot.send_message(chat_id, "Пожалуйста, введите текст для истории:")
+def send_genre_keyboard(message):
+    markup = create_genre_keyboard()
+    bot.send_message(message.chat.id, "Краткая сводка по жанрам:\n"
+"- Фэнтези: жанр литературы, в котором используются элементы магии, фантастические существа и мифология для создания волшебных миров и сюжетов.\n"
+"- Научная фантастика: жанр, в котором автор использует научные и технологические концепции для создания футуристических миров и историй, часто затрагивающих вопросы будущего развития человечества.\n"
+"- Детектив: жанр, основанный на расследовании преступлений и разгадывании загадок, часто сосредоточенных на действиях детектива или сыщика.\n"
+"- Боевик: жанр, в котором акцент делается на динамичных сценах схваток и борьбы, преимущественно в контексте физического противостояния и действий героев.")
+    bot.send_message(message.chat.id, "Выберите жанр:", reply_markup=markup)
+    current_state[message.chat.id] = 'genre'
+    if current_state.get(message.chat.id) == 'genre':
+        genre = message.text
+        markup = create_character_keyboard()
+        bot.send_message(message.chat.id, f"Жанр: {genre}\nВыберите персонажа:", reply_markup=markup)
+        current_state[message.chat.id] = 'character'
+    elif current_state.get(message.chat.id) == 'character':
+        main_person = message.text
+        markup = create_setting_keyboard()
+        bot.send_message(message.chat.id, f"Главный герой: {main_person}\nВыберите сеттинг:", reply_markup=markup)
+        current_state[message.chat.id] = 'setting'
+    elif current_state.get(message.chat.id) == 'setting':
+        setting = message.text
+        final_choice = f"Жанр: {genre}, Главный герой: {main_person}, Сеттинг: {setting}"
+        current_state[message.chat.id] = None
+        bot.send_message(message.chat.id,
+                         f"Вы сделали выбор:\n{final_choice}\nТеперь, пожалуйста, введите текст для истории:")
 
 @bot.message_handler(commands=['end_story'])
 def end_history(message):
@@ -97,7 +133,12 @@ def handle_text_message(message):
         return
     else:
         text = message.text # Получаем текст сообщения от пользователя
-        prompt = text # Используем текст сообщения как prompt
+        final_choice = handle_character_choice(message)
+        system_text = f"Ты - сценарист, пиши эпос, вот общие очертания для истории: {final_choice}"
+        prompt = [{"role":"system",
+                          "text": system_text},
+                        {"role": "user",
+                          "text": text}] # Используем текст сообщения как prompt
         tokens_count = gpt_client.count_tokens(text)
         dbt.deduct_tokens(chat_id, tokens_count)
         dbt.update_tokens_used(chat_id, tokens_count)
