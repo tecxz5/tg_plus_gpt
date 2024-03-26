@@ -2,11 +2,11 @@ import telebot
 import logging
 from functools import wraps
 from gpt import PyYandexGpt
-from database import DatabaseManager
+from database import Database
 from config import TOKEN, WHITELISTED_USERS, GPT_TOKEN, GPT_URL
 
 bot = telebot.TeleBot(TOKEN)
-db = DatabaseManager("tokens_sessions.db")
+db = Database("tokens_sessions.db")
 gpt_client = PyYandexGpt(GPT_TOKEN, GPT_URL, 'yandexgpt-lite') # не самое верное стратегическое решение но всё же
 logging.basicConfig(level=logging.DEBUG)
 user_sessions = {}
