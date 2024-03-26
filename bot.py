@@ -98,6 +98,22 @@ def send_genre_keyboard(message):
 "- Боевик: жанр, в котором акцент делается на динамичных сценах схваток и борьбы, преимущественно в контексте физического противостояния и действий героев.")
     bot.send_message(message.chat.id, "Выберите жанр:", reply_markup=markup)
     current_state[message.chat.id] = 'genre'
+
+@bot.message_handler(commands=['end_story'])
+def end_history(message):
+    chat_id = message.chat.id
+    if chat_id not in user_sessions or not user_sessions[chat_id]:
+        bot.send_message(chat_id, "Вы не начали новую историю. Напишите /new_story для начала.") # горжусь этой функцией
+        return
+    user_sessions[chat_id] = False
+    dbt.reset_session(chat_id)
+    bot.send_message(chat_id, "История закончена")
+
+@bot.message_handler(func=lambda message: True)
+def handle_genre_choice(message):
+    genre = ""  # Инициализация переменной с пустым значением
+    main_person = ""  # Инициализация переменной с пустым значением
+    setting = ""  # Инициализация переменной с пустым значением
     if current_state.get(message.chat.id) == 'genre':
         genre = message.text
         markup = create_character_keyboard()
@@ -114,16 +130,6 @@ def send_genre_keyboard(message):
         current_state[message.chat.id] = None
         bot.send_message(message.chat.id,
                          f"Вы сделали выбор:\n{final_choice}\nТеперь, пожалуйста, введите текст для истории:")
-
-@bot.message_handler(commands=['end_story'])
-def end_history(message):
-    chat_id = message.chat.id
-    if chat_id not in user_sessions or not user_sessions[chat_id]:
-        bot.send_message(chat_id, "Вы не начали новую историю. Напишите /new_story для начала.") # горжусь этой функцией
-        return
-    user_sessions[chat_id] = False
-    dbt.reset_session(chat_id)
-    bot.send_message(chat_id, "История закончена")
 
 @bot.message_handler(func=lambda message: True, content_types=['text'])
 def handle_text_message(message):
