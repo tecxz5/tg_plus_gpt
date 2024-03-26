@@ -6,11 +6,11 @@ from database_token import Database
 from config import TOKEN, WHITELISTED_USERS, GPT_TOKEN, GPT_URL
 
 bot = telebot.TeleBot(TOKEN)
-db = Database("tokens.db")
+dbt = Database("tokens.db")
 gpt_client = PyYandexGpt(GPT_TOKEN, GPT_URL, 'yandexgpt-lite') # не самое верное стратегическое решение но всё же
 logging.basicConfig(level=logging.DEBUG)
 user_sessions = {}
-db.create_tables()
+dbt.create_tables()
 
 def is_user_whitelisted(chat_id): # используется в /whitelist и декораторе
     return chat_id in WHITELISTED_USERS
@@ -64,7 +64,7 @@ def debug(message):
 @bot.message_handler(commands=['used_tokens'])
 def used_tokens_handler(message):
     chat_id = message.chat.id
-    tokens_used = db.get_tokens_used(chat_id)
+    tokens_used = dbt.get_tokens_used(chat_id)
     bot.send_message(chat_id, f"Вы потратили {tokens_used} токенов.")
 
 @bot.message_handler(commands=['new_story'])
@@ -72,10 +72,10 @@ def used_tokens_handler(message):
 def new_story(message):
     chat_id = message.chat.id
     # проверка на наличие профиля
-    user_profile = db.get_user_data(chat_id)
+    user_profile = dbt.get_user_data(chat_id)
     if not user_profile:
         # создаем профиль
-        db.create_user_profile(chat_id)
+        dbt.create_user_profile(chat_id)
     user_sessions[chat_id] = True
     bot.send_message(chat_id, "Пожалуйста, введите текст для истории:")
 
@@ -86,7 +86,7 @@ def end_history(message):
         bot.send_message(chat_id, "Вы не начали новую историю. Напишите /new_story для начала.") # горжусь этой функцией
         return
     user_sessions[chat_id] = False
-    db.reset_session(chat_id)
+    dbt.reset_session(chat_id)
     bot.send_message(chat_id, "История закончена")
 
 @bot.message_handler(func=lambda message: True, content_types=['text'])
@@ -99,8 +99,8 @@ def handle_text_message(message):
         text = message.text # Получаем текст сообщения от пользователя
         prompt = text # Используем текст сообщения как prompt
         tokens_count = gpt_client.count_tokens(text)
-        db.deduct_tokens(chat_id, tokens_count)
-        db.update_tokens_used(chat_id, tokens_count)
+        dbt.deduct_tokens(chat_id, tokens_count)
+        dbt.update_tokens_used(chat_id, tokens_count)
         logging.info(f"Кол-во токенов: {tokens_count}")
         response = gpt_client.create_request(chat_id, prompt)
         if response.status_code == 200:
