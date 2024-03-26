@@ -107,13 +107,25 @@ class PyYandexGpt:
     def count_tokens(self, text: str) -> int:
         token = self.token
         folder_id = self.folder_id
-        headers = {
-            'Authorization': f'Bearer {token}',
+        headers = {  # заголовок запроса, в котором передаем IAM-токен
+            'Authorization': f'Bearer {token}',  # token - наш IAM-токен
             'Content-Type': 'application/json'
+        }
+        data = {
+            "modelUri": f"gpt://{folder_id}/yandexgpt/latest",  # указываем folder_id
+            "maxTokens": "100",
+            "text": text  # text - тот текст, в котором мы хотим посчитать токены
         }
         return len(
             requests.post(
                 "https://llm.api.cloud.yandex.net/foundationModels/v1/tokenize",
-                json={"modelUri": f"gpt://{folder_id}/yandexgpt/atest", "text": text},
+                json=data,
                 headers=headers
-            ).json()['tokens'])
+            ).json()['tokens']
+        )
+        try:
+            tokens = response.json().get('tokens', [])
+            return len(tokens)
+        except KeyError:
+            print("Ошибка: ключ 'tokens' не найден в ответе API.")
+            return 0

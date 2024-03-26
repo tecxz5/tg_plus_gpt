@@ -80,12 +80,13 @@ def end_history(message):
 def handle_text_message(message):
     chat_id = message.chat.id
     if chat_id not in user_sessions or not user_sessions[chat_id]:
-        # Если сессия не активирована, игнорируем сообщение
         bot.send_message(chat_id, "Вы не начали новую историю. Напишите /new_story для начала.") # горжусь этой функцией
         return
     else:
         text = message.text # Получаем текст сообщения от пользователя
         prompt = text # Используем текст сообщения как prompt
+        tokens_count = gpt_client.count_tokens(text)
+        print(f"Количество токенов: {tokens_count}")
         response = gpt_client.create_request(chat_id, prompt)
         if response.status_code == 200:
             try:
