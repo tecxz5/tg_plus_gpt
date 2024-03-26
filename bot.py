@@ -10,7 +10,6 @@ db = Database("tokens.db")
 gpt_client = PyYandexGpt(GPT_TOKEN, GPT_URL, 'yandexgpt-lite') # не самое верное стратегическое решение но всё же
 logging.basicConfig(level=logging.DEBUG)
 user_sessions = {}
-
 db.create_tables()
 
 def is_user_whitelisted(chat_id): # используется в /whitelist и декораторе
