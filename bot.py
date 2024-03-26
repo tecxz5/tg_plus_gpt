@@ -62,8 +62,10 @@ def debug(message):
         bot.send_message(chat_id, f"Ошибка при отправке файла с логами: {e}")
 
 @bot.message_handler(commands=['used_tokens'])
-def used_tokens(message):
-    bot.send_message(chat.id, text= "Команда заглушка, планируется вывод использованных токенов")
+def used_tokens_handler(message):
+    chat_id = message.chat.id
+    tokens_used = db.get_tokens_used(chat_id)
+    bot.send_message(chat_id, f"Вы потратили {tokens_used} токенов.")
 
 @bot.message_handler(commands=['new_story'])
 @private_access() # это преграждает путь если пользователь не в вайтлисте
