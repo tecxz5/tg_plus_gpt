@@ -2,7 +2,7 @@ import telebot
 import logging
 from functools import wraps
 from gpt import PyYandexGpt
-from database_manager import DatabaseManager
+from database import DatabaseManager
 from config import TOKEN, WHITELISTED_USERS, GPT_TOKEN, GPT_URL
 
 bot = telebot.TeleBot(TOKEN)
