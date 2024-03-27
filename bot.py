@@ -155,10 +155,6 @@ def handle_text_message(message):
         dbt.deduct_tokens(chat_id, tokens_count)
         dbt.update_tokens_used(chat_id, tokens_count)
         logging.info(f"Кол-во токенов: {tokens_count}")
-        system_tokens_count = gpt_client.count_tokens(system_text)
-        dbt.deduct_tokens(chat_id, system_tokens_count)
-        dbt.update_tokens_used(chat_id, system_tokens_count)
-        logging.info(f"Кол-во токенов в затраченных в System: {system_tokens_count}")
         response = gpt_client.create_request(chat_id, prompt)
         if response.status_code == 200:
             try:
