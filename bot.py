@@ -107,10 +107,27 @@ def send_genre_keyboard(message):
 
 @bot.message_handler(commands=['end_story'])
 def end_history(message):
+    global final_choice
     chat_id = message.chat.id
     if chat_id not in user_sessions or not user_sessions[chat_id]:
-        bot.send_message(chat_id, "Вы не начали новую историю. Напишите /new_story для начала.") # горжусь этой функцией
+        bot.send_message(chat_id, "Вы не начали новую историю. Напишите /new_story для начала.")
         return
+    system_text = f"Ты - сценарист, пиши эпос, вот общие очертания для истории: {final_choice}"
+    final_request = [{"role":"system",
+                          "text": system_text},
+                        {"role": "user",
+                          "text": "Заверши историю хеппи-эндом"}]
+    response = gpt_client.create_request(chat_id, final_request)
+    if response.status_code == 200:
+        try:
+            response_json = response.json()
+            final_text = response_json['result']['alternatives'][0]['message']['text']
+            bot.send_message(chat_id, final_text)
+        except KeyError:
+            bot.send_message(chat_id, "Извините, не удалось завершить историю.")
+    else:
+        bot.send_message(chat_id, "Извините, произошла ошибка при завершении истории.")
+    # Деактивируем сессию
     user_sessions[chat_id] = False
     dbt.reset_session(chat_id)
     bot.send_message(chat_id, "История закончена")
@@ -146,8 +163,8 @@ def handle_genre_choice(message):
 def handle_text_message(message):
     global final_choice
     chat_id = message.chat.id
-    if chat_id not in user_sessions or not user_sessions[chat_id]:
-        bot.send_message(chat_id, "Вы не начали новую историю. Напишите /new_story для начала.") # горжусь этой функцией
+    if not user_sessions.get(chat_id, False):
+        bot.send_message(chat_id, "Вы не начали новую историю. Напишите /new_story для начала.")
         return
     else:
         text = message.text # Получаем текст сообщения от пользователя
