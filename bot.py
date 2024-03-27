@@ -16,6 +16,7 @@ dbt.create_tables()
 genre = ""
 main_person = ""
 setting = ""
+final_choice = ""
 
 def is_user_whitelisted(chat_id): # используется в /whitelist и декораторе
     return chat_id in WHITELISTED_USERS
@@ -116,7 +117,7 @@ def end_history(message):
 
 @bot.message_handler(func=lambda message: True)
 def handle_genre_choice(message):
-    global genre, main_person, setting
+    global genre, main_person, setting, final_choice
     chat_id = message.chat.id
     if current_state.get(chat_id) == 'genre':
         genre = message.text
@@ -135,17 +136,16 @@ def handle_genre_choice(message):
         bot.send_message(chat_id,
                          f"Вы сделали выбор:\n{final_choice}\nТеперь, пожалуйста, введите текст для истории:")
         bot.register_next_step_handler(message, handle_text_message)
-        return final_choice
 
 @bot.message_handler(func=lambda message: True, content_types=['text'])
 def handle_text_message(message):
+    global final_choice
     chat_id = message.chat.id
     if chat_id not in user_sessions or not user_sessions[chat_id]:
         bot.send_message(chat_id, "Вы не начали новую историю. Напишите /new_story для начала.") # горжусь этой функцией
         return
     else:
         text = message.text # Получаем текст сообщения от пользователя
-        final_choice = handle_genre_choice(message)
         system_text = f"Ты - сценарист, пиши эпос, вот общие очертания для истории: {final_choice}"
         prompt = [{"role":"system",
                           "text": system_text},
@@ -155,6 +155,10 @@ def handle_text_message(message):
         dbt.deduct_tokens(chat_id, tokens_count)
         dbt.update_tokens_used(chat_id, tokens_count)
         logging.info(f"Кол-во токенов: {tokens_count}")
+        system_tokens_count = gpt_client.count_tokens(system_text)
+        dbt.deduct_tokens(chat_id, system_tokens_count)
+        dbt.update_tokens_used(chat_id, system_tokens_count)
+        logging.info(f"Кол-во токенов в затраченных в System: {system_tokens_count}")
         response = gpt_client.create_request(chat_id, prompt)
         if response.status_code == 200:
             try:
