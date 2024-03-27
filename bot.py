@@ -123,18 +123,23 @@ def handle_genre_choice(message):
         genre = message.text
         markup = create_character_keyboard()
         bot.send_message(chat_id, f"Жанр: {genre}\nВыберите персонажа:", reply_markup=markup)
+        bot.send_message(chat_id, "Фишка в том что нейросеть сама допишет персонажей, как допишет никто не знает.")
         current_state[chat_id] = 'character'
     elif current_state.get(chat_id) == 'character':
         main_person = message.text
         markup = create_setting_keyboard()
         bot.send_message(chat_id, f"Главный герой: {main_person}\nВыберите сеттинг:", reply_markup=markup)
+        bot.send_message(chat_id, """Краткая справка по сеттингам:
+Постапокалипсис - действия происходят в мире который пережил катастрофу
+Пустыня - действия происходят на клочке песка неведомо где, неведомо как
+Город - действия происходят в городе, в котором бурлит жизнь""")
         current_state[chat_id] = 'setting'
     elif current_state.get(chat_id) == 'setting':
         setting = message.text
         final_choice = f"Жанр: {genre}, Главный герой: {main_person}, Сеттинг: {setting}"
         current_state[chat_id] = None
         bot.send_message(chat_id,
-                         f"Вы сделали выбор:\n{final_choice}\nТеперь, пожалуйста, введите текст для истории:")
+                         f"Вы сделали выбор:\n{final_choice}\nТеперь, пожалуйста, введите текст для истории:", reply_markup=ReplyKeyboardRemove())
         bot.register_next_step_handler(message, handle_text_message)
 
 @bot.message_handler(func=lambda message: True, content_types=['text'])
