@@ -57,6 +57,14 @@ class Tokens:
         self.cursor.execute("UPDATE tokens_used SET tokens_used = tokens_used + ? WHERE chat_id = ?", (tokens_count, chat_id))
         self.conn.commit()
 
+    def get_tokens(self, chat_id):
+        self.cursor.execute("SELECT tokens FROM sessions WHERE chat_id = ?", (chat_id,))
+        result = self.cursor.fetchone()
+        if result:
+            return result[0]
+        else:
+            return 0
+
     def get_tokens_used(self, chat_id):
         # получение кол-ва использованных токенов
         self.cursor.execute("SELECT tokens_used FROM tokens_used WHERE chat_id = ?", (chat_id,))

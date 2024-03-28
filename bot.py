@@ -189,43 +189,47 @@ def handle_text_message(message):
         bot.send_message(chat_id, "Вы не начали новую историю. Напишите /new_story для начала.")
         return
     else:
-        text = message.text # Получаем текст сообщения от пользователя
-        user_history = dbh.get_history(message.chat.id)
-        history_text = "\n".join([f"{row[0]}: {row[1]} ({row[2]})" for row in user_history])
-        logging.info(f"История общения: {history_text}")
-        final_text = f"{text}, История чата: {history_text}"
-        system_text = f"Ты - сценарист, пиши эпос, не расписывай всё до мелчайших деталей, вот общие очертания для истории: {final_choice}"
-        prompt = [{"role":"system",
-                          "text": system_text},
-                        {"role": "user",
-                          "text": final_text}] # Используем текст сообщения как prompt
-        tokens_count = gpt_client.count_tokens(final_text)
-        dbt.deduct_tokens(chat_id, tokens_count)
-        dbt.update_tokens_used(chat_id, tokens_count)
-        logging.info(f"Кол-во токенов: {tokens_count}")
-        response = gpt_client.create_request(chat_id, prompt)
-        if response.status_code == 200:
-            try:
-                response_json = response.json()
-                result_text = response_json['result']['alternatives'][0]['message']['text']
-                logging.info(response_json)
-                bot.send_message(chat_id, result_text)
-                dbh.create_table(chat_id)
-                dbh.save_message(chat_id, 'user', text)
-                dbh.save_message(chat_id, 'assistant', result_text)
-                logging.info(f"История ответа от пользователя {chat_id} сохранена")
-                bot.register_next_step_handler(message, handle_text_message)
-            except KeyError:
-                logging.error('Ответ от API GPT не содержит ключа "result"')
-                bot.send_message(chat_id, "Извините, не удалось сгенерировать историю.")
+        current_tokens = dbt.get_tokens(chat_id)
+        if current_tokens < 50:
+            bot.send_message(chat_id, "Ваши токены закончились. Вы не можете продолжить историю. Вы только можете ее завершить с помощью команды /end_story")
+            user_sessions[chat_id] = 'tokens_off_limit'
         else:
-            logging.error(f'Ошибка API GPT: {response.status_code}')
-            bot.send_message(chat_id, f"""
-Извините, произошла ошибка при обращении к API GPT.
-Ошибка: {response.status_code}
-||Если ошибка 429 - нейросеть просит не так часто писать промпты либо же она нагружена||""",
-                         parse_mode='MarkdownV2')
-            bot.register_next_step_handler(message, handle_text_message)
+            text = message.text # Получаем текст сообщения от пользователя
+            user_history = dbh.get_history(message.chat.id)
+            history_text = "\n".join([f"{row[0]}: {row[1]} ({row[2]})" for row in user_history])
+            logging.info(f"История общения: {history_text}")
+            final_text = f"{text}, История чата: {history_text}"
+            system_text = f"Ты - сценарист, пиши эпос, не расписывай всё до мелчайших деталей, вот общие очертания для истории: {final_choice}"
+            prompt = [{"role":"system",
+                              "text": system_text},
+                            {"role": "user",
+                              "text": final_text}] # Используем текст сообщения как prompt
+            tokens_count = gpt_client.count_tokens(final_text)
+            dbt.deduct_tokens(chat_id, tokens_count)
+            dbt.update_tokens_used(chat_id, tokens_count)
+            response = gpt_client.create_request(chat_id, prompt)
+            if response.status_code == 200:
+                try:
+                    response_json = response.json()
+                    result_text = response_json['result']['alternatives'][0]['message']['text']
+                    logging.info(response_json)
+                    bot.send_message(chat_id, result_text)
+                    dbh.create_table(chat_id)
+                    dbh.save_message(chat_id, 'user', text)
+                    dbh.save_message(chat_id, 'assistant', result_text)
+                    logging.info(f"История ответа от пользователя {chat_id} сохранена")
+                    bot.register_next_step_handler(message, handle_text_message)
+                except KeyError:
+                    logging.error('Ответ от API GPT не содержит ключа "result"')
+                    bot.send_message(chat_id, "Извините, не удалось сгенерировать историю.")
+            else:
+                logging.error(f'Ошибка API GPT: {response.status_code}')
+                bot.send_message(chat_id, f"""
+    Извините, произошла ошибка при обращении к API GPT.
+    Ошибка: {response.status_code}
+    ||Если ошибка 429 - нейросеть просит не так часто писать промпты либо же она нагружена||""",
+                             parse_mode='MarkdownV2')
+                bot.register_next_step_handler(message, handle_text_message)
 
 if __name__ == "__main__":
     print("Бот запускается...")
