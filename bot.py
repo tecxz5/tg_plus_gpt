@@ -81,7 +81,7 @@ def whitelist(message):
 def debug(message):
     chat_id = message.chat.id
     try:
-        with open('bot_logs.log', 'rb') as log_file:
+        with open('logs.log', 'rb') as log_file:
             bot.send_document(chat_id, log_file)
         bot.send_message(chat_id, "Файл с логами отправлен.")
     except Exception as e:
