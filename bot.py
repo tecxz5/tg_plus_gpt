@@ -95,7 +95,6 @@ def used_tokens_handler(message):
 @private_access() # это преграждает путь если пользователь не в вайтлисте
 def send_genre_keyboard(message):
     chat_id = message.chat.id
-    user_sessions[chat_id] = True
     markup = create_genre_keyboard()
     bot.send_message(message.chat.id, "Краткая сводка по жанрам:\n"
 "- Фэнтези: жанр литературы, в котором используются элементы магии, фантастические существа и мифология для создания волшебных миров и сюжетов.\n"
@@ -104,6 +103,22 @@ def send_genre_keyboard(message):
 "- Боевик: жанр, в котором акцент делается на динамичных сценах схваток и борьбы, преимущественно в контексте физического противостояния и действий героев.")
     bot.send_message(chat_id, "Выберите жанр:", reply_markup=markup)
     current_state[chat_id] = 'genre'
+    bot.register_next_step_handler(handle_genre_choice)
+
+@bot.message_handler(commands=['begin'])
+@private_access()
+def begin(message):
+    сhat_id = message.chat.id
+    if user_sessions.get(сhat_id) == 'waiting_for_command':
+        user_profile = dbt.get_user_data(сhat_id)
+        if not user_profile:
+            # создаем профиль
+            dbt.create_user_profile(сhat_id)
+        user_sessions[сhat_id] = True
+        bot.send_message(сhat_id, "Пожалуйста, введите текст для истории:")
+        bot.register_next_step_handler(message, handle_text_message)
+    else:
+        bot.send_message(сhat_id, 'Вы не начинали истрию')
 
 @bot.message_handler(commands=['end_story'])
 def end_history(message):
@@ -140,7 +155,6 @@ def handle_genre_choice(message):
         genre = message.text
         markup = create_character_keyboard()
         bot.send_message(chat_id, f"Жанр: {genre}\nВыберите персонажа:", reply_markup=markup)
-        bot.send_message(chat_id, "Фишка в том что нейросеть сама допишет персонажей, как допишет никто не знает.")
         current_state[chat_id] = 'character'
     elif current_state.get(chat_id) == 'character':
         main_person = message.text
@@ -155,9 +169,9 @@ def handle_genre_choice(message):
         setting = message.text
         final_choice = f"Жанр: {genre}, Главный герой: {main_person}, Сеттинг: {setting}"
         current_state[chat_id] = None
+        user_sessions[chat_id] = 'waiting_for_command'
         bot.send_message(chat_id,
-                         f"Вы сделали выбор:\n{final_choice}\nТеперь, пожалуйста, введите текст для истории:", reply_markup=ReplyKeyboardRemove())
-        bot.register_next_step_handler(message, handle_text_message)
+                         f"Вы сделали выбор:\n{final_choice}\nТеперь, пожалуйста, введите команду /begin", reply_markup=telebot.types.ReplyKeyboardRemove())
 
 @bot.message_handler(func=lambda message: True, content_types=['text'])
 def handle_text_message(message):
