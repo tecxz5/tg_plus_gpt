@@ -203,6 +203,7 @@ def handle_text_message(message):
                 dbh.create_table(chat_id)
                 dbh.save_message(chat_id, 'user', text)
                 dbh.save_message(chat_id, 'assistant', result_text)
+                logging.info(f"История ответа от пользователя {chat_id} сохранена")
                 bot.register_next_step_handler(message, handle_text_message)
             except KeyError:
                 logging.error('Ответ от API GPT не содержит ключа "result"')

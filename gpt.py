@@ -76,7 +76,7 @@ class PyYandexGpt:
         }
 
         # Логирование данных запроса
-        logging.debug(f"Отправляем запрос к API GPT с данными: {data}")
+        logging.info(f"Отправляем запрос к API GPT с данными: {data}")
         return requests.request("POST", url, json=data, headers=headers)
 
     def response(self, rep: requests.Response, user_id: int) -> dict:
