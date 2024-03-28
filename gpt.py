@@ -69,8 +69,8 @@ class PyYandexGpt:
             "modelUri": f"gpt://{self.folder_id}/{self.gpt}/latest",
             "completionOptions": {
                 "stream": False,
-                "temperature": 0.6,
-                "maxTokens": "200"
+                "temperature": 0.5,
+                "maxTokens": "80"
             },
             "messages": prompt
         }

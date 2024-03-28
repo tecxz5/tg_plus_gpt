@@ -129,11 +129,14 @@ def end_history(message):
     if chat_id not in user_sessions or not user_sessions[chat_id]:
         bot.send_message(chat_id, "Вы не начали новую историю. Напишите /new_story для начала.")
         return
-    system_text = f"Ты - сценарист, пиши эпос, вот общие очертания для истории: {final_choice}"
+    user_history = dbh.get_history(message.chat.id)
+    history_text = "\n".join([f"{row[0]}: {row[1]} ({row[2]})" for row in user_history])
+    text = f"Заверши историю, вот для нее контекст: {history_text}"
+    system_text = f"Ты - сценарист, пиши эпос, не расписывай всё до мелчайших деталей, вот общие очертания для истории : {final_choice}"
     final_request = [{"role":"system",
                           "text": system_text},
                         {"role": "user",
-                          "text": "Заверши историю хеппи-эндом"}]
+                          "text": text}]
     response = gpt_client.create_request(chat_id, final_request)
     if response.status_code == 200:
         try:
@@ -147,6 +150,7 @@ def end_history(message):
     # Деактивируем сессию
     user_sessions[chat_id] = False
     dbt.reset_session(chat_id)
+    dbh.clear_history(chat_id)
     bot.send_message(chat_id, "История закончена")
 
 @bot.message_handler(func=lambda message: True)
@@ -177,6 +181,8 @@ def handle_genre_choice(message):
 
 @bot.message_handler(func=lambda message: True, content_types=['text'])
 def handle_text_message(message):
+    if message.text.startswith('/'):
+        return
     global final_choice
     chat_id = message.chat.id
     if not user_sessions.get(chat_id, False):
@@ -184,12 +190,16 @@ def handle_text_message(message):
         return
     else:
         text = message.text # Получаем текст сообщения от пользователя
-        system_text = f"Ты - сценарист, пиши эпос, вот общие очертания для истории: {final_choice}"
+        user_history = dbh.get_history(message.chat.id)
+        history_text = "\n".join([f"{row[0]}: {row[1]} ({row[2]})" for row in user_history])
+        logging.info(f"История общения: {history_text}")
+        final_text = f"{text}, История чата: {history_text}"
+        system_text = f"Ты - сценарист, пиши эпос, не расписывай всё до мелчайших деталей, вот общие очертания для истории: {final_choice}"
         prompt = [{"role":"system",
                           "text": system_text},
                         {"role": "user",
-                          "text": text}] # Используем текст сообщения как prompt
-        tokens_count = gpt_client.count_tokens(text)
+                          "text": final_text}] # Используем текст сообщения как prompt
+        tokens_count = gpt_client.count_tokens(final_text)
         dbt.deduct_tokens(chat_id, tokens_count)
         dbt.update_tokens_used(chat_id, tokens_count)
         logging.info(f"Кол-во токенов: {tokens_count}")
