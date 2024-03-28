@@ -196,7 +196,7 @@ def handle_text_message(message):
             try:
                 response_json = response.json()
                 result_text = response_json['result']['alternatives'][0]['message']['text']
-                logging.info(result_text)
+                logging.info(response_json)
                 bot.send_message(chat_id, result_text)
                 bot.register_next_step_handler(message, handle_text_message)
             except KeyError:
