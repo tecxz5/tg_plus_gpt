@@ -3,11 +3,13 @@ import logging
 from telebot import types
 from functools import wraps
 from gpt import PyYandexGpt
-from database_token import Database
+from database_token import Tokens
+from database_history import History
 from config import TOKEN, WHITELISTED_USERS, GPT_TOKEN, GPT_URL
 
 bot = telebot.TeleBot(TOKEN)
-dbt = Database("tokens.db")
+dbt = Tokens("tokens.db")
+dbh = History("history.db")
 gpt_client = PyYandexGpt(GPT_TOKEN, GPT_URL, 'yandexgpt-lite') # не самое верное стратегическое решение но всё же
 logging.basicConfig(level=logging.DEBUG)
 user_sessions = {}
@@ -198,6 +200,9 @@ def handle_text_message(message):
                 result_text = response_json['result']['alternatives'][0]['message']['text']
                 logging.info(response_json)
                 bot.send_message(chat_id, result_text)
+                dbh.create_table(chat_id)
+                dbh.save_message(chat_id, 'user', text)
+                dbh.save_message(chat_id, 'assistant', result_text)
                 bot.register_next_step_handler(message, handle_text_message)
             except KeyError:
                 logging.error('Ответ от API GPT не содержит ключа "result"')
