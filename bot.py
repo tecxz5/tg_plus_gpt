@@ -103,7 +103,7 @@ def send_genre_keyboard(message):
 "- Боевик: жанр, в котором акцент делается на динамичных сценах схваток и борьбы, преимущественно в контексте физического противостояния и действий героев.")
     bot.send_message(chat_id, "Выберите жанр:", reply_markup=markup)
     current_state[chat_id] = 'genre'
-    bot.register_next_step_handler(handle_genre_choice)
+    bot.register_next_step_handler(message, handle_genre_choice)
 
 @bot.message_handler(commands=['begin'])
 @private_access()
@@ -118,7 +118,7 @@ def begin(message):
         bot.send_message(сhat_id, "Пожалуйста, введите текст для истории:")
         bot.register_next_step_handler(message, handle_text_message)
     else:
-        bot.send_message(сhat_id, 'Вы не начинали истрию')
+        bot.send_message(сhat_id, 'Вы не начинали истрию, для ее начала предлагаю ввести /new_story')
 
 @bot.message_handler(commands=['end_story'])
 def end_history(message):
@@ -198,6 +198,7 @@ def handle_text_message(message):
                 result_text = response_json['result']['alternatives'][0]['message']['text']
                 logging.info(result_text)
                 bot.send_message(chat_id, result_text)
+                bot.register_next_step_handler(message, handle_text_message)
             except KeyError:
                 logging.error('Ответ от API GPT не содержит ключа "result"')
                 bot.send_message(chat_id, "Извините, не удалось сгенерировать историю.")
@@ -208,6 +209,7 @@ def handle_text_message(message):
 Ошибка: {response.status_code}
 ||Если ошибка 429 - нейросеть просит не так часто писать промпты либо же она нагружена||""",
                          parse_mode='MarkdownV2')
+            bot.register_next_step_handler(message, handle_text_message)
 
 if __name__ == "__main__":
     print("Бот запускается...")
