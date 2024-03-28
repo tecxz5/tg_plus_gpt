@@ -58,7 +58,16 @@ class Tokens:
         self.conn.commit()
 
     def get_tokens(self, chat_id):
+        # получение кол-ва доступных токенов
         self.cursor.execute("SELECT tokens FROM sessions WHERE chat_id = ?", (chat_id,))
+        result = self.cursor.fetchone()
+        if result:
+            return result[0]
+        else:
+            return 0
+
+    def check_session(self, chat_id):
+        self.cursor.execute("SELECT sessions_count FROM sessions WHERE chat_id = ?", (chat_id,))
         result = self.cursor.fetchone()
         if result:
             return result[0]

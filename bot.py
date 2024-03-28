@@ -55,8 +55,10 @@ def create_setting_keyboard():
 
 @bot.message_handler(commands=['start'])
 def start(message):
+    chat_id = message.chat.id
     user_name = message.from_user.first_name
-    bot.send_message(message.chat.id,
+    dbt.create_user_profiles(chat_id)
+    bot.send_message(chat_id,
                      text=f"""
 Привет, {user_name}! Я бот-сценарист для придумывания разных историй.
 От тебя требуется фантазия и выбор жанров, персонажей и сеттингов(где происходят действие).
@@ -93,29 +95,36 @@ def used_tokens_handler(message):
     tokens_used = dbt.get_tokens_used(chat_id)
     bot.send_message(chat_id, f"Вы потратили {tokens_used} токенов.")
 
+@bot.message_handler(commands=['sessions'])
+def sessions(message):
+    chat_id = message.chat.id
+    sessions = dbt.check_session(chat_id)
+    bot.send_message(chat_id, f"Доступных сессий у вас: {sessions}")
+
 @bot.message_handler(commands=['new_story'])
 @private_access() # это преграждает путь если пользователь не в вайтлисте
 def send_genre_keyboard(message):
     chat_id = message.chat.id
-    markup = create_genre_keyboard()
-    bot.send_message(message.chat.id, "Краткая сводка по жанрам:\n"
-"- Фэнтези: жанр литературы, в котором используются элементы магии, фантастические существа и мифология для создания волшебных миров и сюжетов.\n"
-"- Научная фантастика: жанр, в котором автор использует научные и технологические концепции для создания футуристических миров и историй, часто затрагивающих вопросы будущего развития человечества.\n"
-"- Детектив: жанр, основанный на расследовании преступлений и разгадывании загадок, часто сосредоточенных на действиях детектива или сыщика.\n"
-"- Боевик: жанр, в котором акцент делается на динамичных сценах схваток и борьбы, преимущественно в контексте физического противостояния и действий героев.")
-    bot.send_message(chat_id, "Выберите жанр:", reply_markup=markup)
-    current_state[chat_id] = 'genre'
-    bot.register_next_step_handler(message, handle_genre_choice)
+    logging.info("Проверка кол-ва сессий")
+    current_sessions = dbt.check_session(chat_id)
+    if current_sessions == 0:
+        bot.send_message(chat_id,"Вы израсходовали все сессии, доступа нету")
+    else:
+        markup = create_genre_keyboard()
+        bot.send_message(message.chat.id, "Краткая сводка по жанрам:\n"
+    "- Фэнтези: жанр литературы, в котором используются элементы магии, фантастические существа и мифология для создания волшебных миров и сюжетов.\n"
+    "- Научная фантастика: жанр, в котором автор использует научные и технологические концепции для создания футуристических миров и историй, часто затрагивающих вопросы будущего развития человечества.\n"
+    "- Детектив: жанр, основанный на расследовании преступлений и разгадывании загадок, часто сосредоточенных на действиях детектива или сыщика.\n"
+    "- Боевик: жанр, в котором акцент делается на динамичных сценах схваток и борьбы, преимущественно в контексте физического противостояния и действий героев.")
+        bot.send_message(chat_id, "Выберите жанр:", reply_markup=markup)
+        current_state[chat_id] = 'genre'
+        bot.register_next_step_handler(message, handle_genre_choice)
 
 @bot.message_handler(commands=['begin'])
 @private_access()
 def begin(message):
     сhat_id = message.chat.id
     if user_sessions.get(сhat_id) == 'waiting_for_command':
-        user_profile = dbt.get_user_data(сhat_id)
-        if not user_profile:
-            # создаем профиль
-            dbt.create_user_profile(сhat_id)
         user_sessions[сhat_id] = True
         bot.send_message(сhat_id, "Пожалуйста, введите текст для истории:")
         bot.register_next_step_handler(message, handle_text_message)
