@@ -1,7 +1,7 @@
 import enum
 import requests
 import logging
-from config import GPT_TOKEN, GPT_URL
+from config import IAM_TOKEN, FOLDER_ID
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(filename='logs.log', level=logging.DEBUG,
@@ -38,8 +38,8 @@ class Prompt:
 
 class PyYandexGpt:
     def __init__(self, token, folder_id: str, gpt: str):
-        self.token = GPT_TOKEN
-        self.folder_id = GPT_URL
+        self.token = IAM_TOKEN
+        self.folder_id = FOLDER_ID
         self.gpt = 'yandexgpt-lite'
         self.history = {}
 
