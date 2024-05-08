@@ -1,4 +1,4 @@
 TOKEN = ""
-GPT_TOKEN = ""
-GPT_URL = ""
+FOLDER_ID = ""
+IAM_TOKEN = ""
 WHITELISTED_USERS = []
