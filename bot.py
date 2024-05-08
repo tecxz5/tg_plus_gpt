@@ -58,6 +58,11 @@ def debug(message):
     chat_id = message.chat.id
     bot.send_message(chat_id, f"Команда-пустышка")
 
+@bot.message_handler(commands=['clear'])
+def clear(message):
+    chat_id = message.chat.id
+    bot.send_message(chat_id, f"Команда-пустышка")
+
 @bot.message_handler(commands=['tokens'])
 def tokens_handler(message):
     chat_id = message.chat.id
