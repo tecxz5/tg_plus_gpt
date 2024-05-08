@@ -2,15 +2,15 @@ import telebot
 import logging
 from telebot import types
 from functools import wraps
-from gpt import PyYandexGpt
+from yandex_gpt import PyYandexGpt
 from database_token import Tokens
 from database_history import History
-from config import TOKEN, WHITELISTED_USERS, GPT_TOKEN, GPT_URL
+from config import TOKEN, WHITELISTED_USERS, IAM_TOKEN, FOLDER_ID
 
 bot = telebot.TeleBot(TOKEN)
 dbt = Tokens("tokens.db")
 dbh = History("history.db")
-gpt_client = PyYandexGpt(GPT_TOKEN, GPT_URL, 'yandexgpt-lite') # не самое верное стратегическое решение но всё же
+gpt_client = PyYandexGpt(IAM_TOKEN, FOLDER_ID, 'yandexgpt-lite') # не самое верное стратегическое решение но всё же
 logging.basicConfig(level=logging.DEBUG)
 user_sessions = {}
 current_state = {}
