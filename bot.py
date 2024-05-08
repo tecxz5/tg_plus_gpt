@@ -10,9 +10,6 @@ bot = telebot.TeleBot(TOKEN)
 dbt = Tokens("tokens.db")
 dbh = History("history.db")
 logging.basicConfig(level=logging.DEBUG)
-user_sessions = {}
-current_state = {}
-dbt.create_tables()
 
 def is_user_whitelisted(chat_id): # используется в /whitelist и декораторе
     return chat_id in WHITELISTED_USERS
@@ -21,12 +18,9 @@ def is_user_whitelisted(chat_id): # используется в /whitelist и д
 def start(message):
     chat_id = message.chat.id
     user_name = message.from_user.first_name
-    dbt.create_user_profiles(chat_id)
     bot.send_message(chat_id,
                      text=f"""
-Привет, {user_name}! Я бот-сценарист для придумывания разных историй.
-От тебя требуется фантазия и выбор жанров, персонажей и сеттингов(где происходят действие).
-Напиши /new_story и давай же начнем!""")
+Привет, {user_name}! Я скорее всего твой собеседник или переработка писателя историй, но не об этом, ты мне можешь отправлять и текстовыые сообщения и голосовые, я на те и те буду отвечать, кружки не пробуй, в любом случае, я твоего слова жду😉""")
 
 @bot.message_handler(commands=['help'])
 def help(message):
@@ -78,6 +72,15 @@ def symbols_handler(message):
 def blocks_handler(message):
     chat_id = message.chat.id
     bot.send_message(chat_id, f"Команда-пустышка")
+
+
+@bot.message_handler(content_types=['text'])
+def text_reply(message):
+    bot.send_message(message.chat.id, 'Я тебе буду отвечать только одной заготовленной фразой😊')
+
+@bot.message_handler(content_types=['voice'])
+def voice_reply(message):
+    bot.send_message(message.chat.id, "Пока ответить на голосовое сообщение голосовым я не могу😥")
 
 if __name__ == "__main__":
     print("Бот запускается...")
