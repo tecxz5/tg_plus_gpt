@@ -2,7 +2,7 @@ import telebot
 import logging
 from telebot import types
 from yandex_gpt import PyYandexGpt
-from database_token import Tokens
+from database_YaGPT import Tokens
 from database_history import History
 from config import TOKEN, WHITELISTED_USERS, IAM_TOKEN, FOLDER_ID
 
