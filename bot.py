@@ -56,12 +56,11 @@ def debug(message):
 def clear(message):
     chat_id = message.chat.id
     dbh.clear_history(chat_id)
-    bot.send_message(chat_id, f"Команда-пустышка")
+    bot.send_message(chat_id, f"История отчищена")
 
 @bot.message_handler(commands=['tokens'])
 def tokens_handler(message):
     chat_id = message.chat.id
-    tokens_used = dbt.get_tokens_used(chat_id)
     bot.send_message(chat_id, f"Команда-пустышка")
 
 @bot.message_handler(commands=['symbols'])
