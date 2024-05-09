@@ -43,3 +43,6 @@ class Tokens:
             return result[0]
         else:
             return 0
+
+    def close_connection(self):
+        self.conn.close()

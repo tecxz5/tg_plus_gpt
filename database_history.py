@@ -55,3 +55,6 @@ class History:
         cur = self.conn.cursor()
         cur.execute(sql)
         self.conn.commit()
+
+    def close_connection(self):
+        self.conn.close()
