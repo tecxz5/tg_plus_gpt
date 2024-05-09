@@ -56,7 +56,8 @@ def debug(message):
 def clear(message):
     chat_id = message.chat.id
     dbh.clear_history(chat_id)
-    bot.send_message(chat_id, f"История отчищена")
+    bot.send_message(chat_id, "История отчищена")
+
 
 @bot.message_handler(commands=['tokens'])
 def tokens_handler(message):

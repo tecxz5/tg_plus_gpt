@@ -53,8 +53,11 @@ class History:
         table_name = f"history_{user_id}"
         sql = f''' DELETE FROM {table_name} '''
         cur = self.conn.cursor()
-        cur.execute(sql)
-        self.conn.commit()
+        try:
+            cur.execute(sql)
+            self.conn.commit()
+        except sqlite3.OperationalError as e:
+            print(f"Ошибка при очистке истории пользователя {user_id}: {e}")
 
     def close_connection(self):
         self.conn.close()
