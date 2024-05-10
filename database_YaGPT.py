@@ -17,7 +17,7 @@ class Tokens:
         self.conn.commit()
 
     def create_user_profile(self, chat_id):
-        self.cursor.execute("INSERT OR IGNORE INTO sessions (chat_id, sessions_count, tokens) VALUES (?, ?, ?)", (chat_id, 5000))
+        self.cursor.execute("INSERT OR IGNORE INTO sessions (chat_id , tokens) VALUES ( ?, ?)", (chat_id, 5000))
         self.conn.commit()
 
     def get_user_data(self, chat_id):
