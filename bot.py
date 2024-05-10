@@ -4,12 +4,16 @@ from telebot import types
 from yandex_gpt import PyYandexGpt
 from database_YaGPT import Tokens
 from database_history import History
+from database_SpeechKit import SpeechKit
 from config import TOKEN, WHITELISTED_USERS, IAM_TOKEN, FOLDER_ID
 
 bot = telebot.TeleBot(TOKEN)
 dbt = Tokens("tokens.db")
 dbh = History("history.db")
+dbS = SpeechKit()
 logging.basicConfig(level=logging.DEBUG)
+dbt.create_tables()
+dbS.create_database()
 
 def is_user_whitelisted(chat_id): # используется в /whitelist и декораторе
     return chat_id in WHITELISTED_USERS
@@ -19,6 +23,7 @@ def start(message):
     chat_id = message.chat.id
     user_name = message.from_user.first_name
     dbt.create_user_profile(chat_id)
+    dbS.add_user(chat_id)
     bot.send_message(chat_id,
                      text=f"""
 Привет, {user_name}! Я скорее всего твой собеседник или переработка писателя историй, но не об этом, ты мне можешь отправлять и текстовыые сообщения и голосовые, я на те и те буду отвечать, кружки не пробуй, в любом случае, я твоего слова жду😉""")
@@ -65,7 +70,7 @@ def tokens_handler(message):
     chat_id = message.chat.id
     user_name = message.from_user.first_name
     tokens = dbt.get_tokens(chat_id)
-    symbols = None
+    symbols = dbS.get_token_count(chat_id)
     blocks = None
     bot.send_message(chat_id, f"""Информация по пользователю {user_name}
 
