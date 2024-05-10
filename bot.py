@@ -18,6 +18,7 @@ def is_user_whitelisted(chat_id): # используется в /whitelist и д
 def start(message):
     chat_id = message.chat.id
     user_name = message.from_user.first_name
+    dbt.create_user_profile(chat_id)
     bot.send_message(chat_id,
                      text=f"""
 Привет, {user_name}! Я скорее всего твой собеседник или переработка писателя историй, но не об этом, ты мне можешь отправлять и текстовыые сообщения и голосовые, я на те и те буду отвечать, кружки не пробуй, в любом случае, я твоего слова жду😉""")
@@ -59,21 +60,18 @@ def clear(message):
     bot.send_message(chat_id, "История отчищена")
 
 
-@bot.message_handler(commands=['tokens'])
+@bot.message_handler(commands=['profile'])
 def tokens_handler(message):
     chat_id = message.chat.id
-    bot.send_message(chat_id, f"Команда-пустышка")
+    user_name = message.from_user.first_name
+    tokens = dbt.get_tokens(chat_id)
+    symbols = None
+    blocks = None
+    bot.send_message(chat_id, f"""Информация по пользователю {user_name}
 
-@bot.message_handler(commands=['symbols'])
-def symbols_handler(message):
-    chat_id = message.chat.id
-    bot.send_message(chat_id, f"Команда-пустышка")
-
-@bot.message_handler(commands=['blocks'])
-def blocks_handler(message):
-    chat_id = message.chat.id
-    bot.send_message(chat_id, f"Команда-пустышка")
-
+Кол-во оставшихся токенов: {tokens}
+Кол-ва оставшихся символов: {symbols}
+Кол-во оставшихся блоков: {blocks}""")
 
 @bot.message_handler(content_types=['text'])
 def text_reply(message):
