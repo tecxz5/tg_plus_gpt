@@ -33,7 +33,7 @@ def help(message):
     bot.send_message(message.chat.id,
                       text="""
 Бот работает на базе YaGPT(ЯЖПТ) и SpeechKit
-Документация бота здесь - https://golnk.ru/xgMLY
+Документация бота здесь - https://hoprik.ru/u/11bc18
 Проверить можете ли вы воспользоваться ботом здеся: /whitelist""")
 
 @bot.message_handler(commands=['whitelist'])
@@ -94,6 +94,26 @@ def voice_reply(message):
         bot.send_message(chat_id, "Пока ответить на голосовое сообщение голосовым я не могу😥")
     else:
         bot.send_message(chat_id, "Я не могу принять твое сообщение, так как ты не в вайтлисте (/whitelist)")
+
+def handle_text(message):
+    chat_id = message.chat.id
+    text = message.text
+    db.save_request(chat_id, text)
+    current_characters = db.get_token_count(chat_id)
+    if current_characters - len(text) < 0: # проверка на то, что пользователь не уйдет в минус
+        bot.send_message(chat_id, "Ты перешел лимит своих токенов, сделай текст покороче")
+        return
+    if len(text) >= 100: # проверка на кол-во символов
+        bot.send_message(chat_id, "Ты написал текст длинне 100 символов, сделай текст покороче")
+        return
+    voice = db.get_chosen_voice(chat_id)
+    current_characters = db.get_token_count(chat_id)
+    success, audio_file_path = text_to_speech(text, voice, str(chat_id))
+    if success:
+        db.update_token_count(chat_id, current_characters - len(text))
+        bot.send_audio(chat_id, open(audio_file_path, 'rb'))
+    else:
+        bot.send_message(chat_id, "Ошибка при синтезе речи.")
 
 if __name__ == "__main__":
     print("Бот запускается...")
