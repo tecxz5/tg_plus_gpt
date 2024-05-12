@@ -1,27 +1,24 @@
-import configparser
 import requests
 
-# Функция для получения токена
 def get_token() -> str:
     url = "http://169.254.169.254/computeMetadata/v1/instance/service-accounts/default/token"
     headers = {"Metadata-Flavor": "Google"}
     response = requests.request("GET", url, headers=headers)
     return response.json()["access_token"]
 
-# Получаем токен
-new_token = get_token()
+def update_config_file(file_path):
+    # Чтение содержимого файла
+    with open(file_path, 'r') as file:
+        content = file.read()
 
-# Создаем объект configparser
-config = configparser.ConfigParser()
+    # Получение нового токена
+    new_token = get_token()
 
-# Читаем существующий файл config.py
-config.read('config.py')
+    # Замена старого токена на новый
+    content = content.replace('IAM_TOKEN = "old_token_value"', f'IAM_TOKEN = "{new_token}"')
 
-# Перезаписываем значение TOKEN новым токеном
-config['DEFAULT']['IAM_TOKEN'] = new_token
+    # Перезапись файла с новым содержимым
+    with open(file_path, 'w') as file:
+        file.write(content)
 
-# Записываем изменения в файл config.py
-with open('config.py', 'w') as configfile:
-    config.write(configfile)
-
-print("Токен успешно перезаписан в config.py")
+update_config_file('config.py')
