@@ -44,5 +44,9 @@ class SpeechKit:
         self.cursor.execute("UPDATE symbols SET token_count = ? WHERE chat_id = ?", (new_count, chat_id))
         self.conn.commit()
 
+    def update_blocks_count(self, chat_id, new_count):
+        self.cursor.execute("UPDATE blocks SET blocks_count =? WHERE chat_id =?", (new_count, chat_id))
+        self.conn.commit()
+
     def close(self):
         self.conn.close()
