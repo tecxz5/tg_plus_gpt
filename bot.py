@@ -2,10 +2,6 @@ import math
 import telebot
 import logging
 import functools
-import subprocess
-import time
-import schedule
-from auto_token import run_token_update
 from yandex_gpt import PyYandexGpt
 from database_YaGPT import Tokens
 from database_history import History
