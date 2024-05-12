@@ -19,17 +19,24 @@ dbt.create_tables()
 dbS.create_database()
 
 def is_stt_block_limit(message, duration):
-    user_id = message.from_user.id
+    chat_id = message.from_user.id
 
     # Переводим секунды в аудиоблоки
-    audio_blocks = math.ceil(duration / 15) # округляем в большую сторону
-    # Функция из БД для подсчёта всех потраченных пользователем аудиоблоков
+    audio_blocks = math.ceil(duration / 15)
+    all_blocks = dbS.get_blocks_vount(chat_id)
 
     # Проверяем, что аудио длится меньше 30 секунд
     if duration >= 30:
         msg = "SpeechKit STT работает с голосовыми сообщениями меньше 30 секунд"
-        bot.send_message(user_id, msg)
+        bot.send_message(chat_id, msg)
         return None
+
+    if all_blocks == 0:
+        msg = "Исчерпаны все блоки, использование STT функции ограничено"
+        bot.send_message(chat_id, msg)
+        return None
+
+    return audio_blocks
 
 
 def is_user_whitelisted(chat_id): # используется в /whitelist и декораторе
@@ -144,7 +151,7 @@ def handle_tts(message):
         bot.send_message(chat_id, "Ошибка при синтезе речи.")
 
 def handle_stt(message):
-    user_id = message.from_user.id
+    chat_id = message.from_user.id
 
     # Проверка, что сообщение действительно голосовое
     if not message.voice:
@@ -165,9 +172,11 @@ def handle_stt(message):
     # Если статус True - отправляем текст сообщения и сохраняем в БД, иначе - сообщение об ошибке
     if status:
         # Записываем сообщение и кол-во аудиоблоков в БД
-        bot.send_message(user_id, text, reply_to_message_id=message.id)
+        bot.send_message(chat_id, text, reply_to_message_id=message.id)
+        # Здесь добавляем обновление количества блоков
+        dbS.update_blocks_count(chat_id,dbS.get_blocks_vount(chat_id) - stt_blocks)  # Предполагаем, что один блок используется за запрос
     else:
-        bot.send_message(user_id, text)
+        bot.send_message(chat_id, text)
 
 if __name__ == "__main__":
     print("Бот запускается...")
