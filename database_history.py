@@ -57,7 +57,7 @@ class History:
             cur.execute(sql)
             self.conn.commit()
         except sqlite3.OperationalError as e:
-            print(f"Ошибка при очистке истории пользователя {user_id}: {e}")
+            return
 
     def close_connection(self):
         self.conn.close()
