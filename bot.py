@@ -1,3 +1,4 @@
+import math
 import telebot
 import logging
 import functools
@@ -16,6 +17,20 @@ dbS = SpeechKit()
 logging.basicConfig(level=logging.DEBUG)
 dbt.create_tables()
 dbS.create_database()
+
+def is_stt_block_limit(message, duration):
+    user_id = message.from_user.id
+
+    # Переводим секунды в аудиоблоки
+    audio_blocks = math.ceil(duration / 15) # округляем в большую сторону
+    # Функция из БД для подсчёта всех потраченных пользователем аудиоблоков
+
+    # Проверяем, что аудио длится меньше 30 секунд
+    if duration >= 30:
+        msg = "SpeechKit STT работает с голосовыми сообщениями меньше 30 секунд"
+        bot.send_message(user_id, msg)
+        return None
+
 
 def is_user_whitelisted(chat_id): # используется в /whitelist и декораторе
     return chat_id in WHITELISTED_USERS
@@ -57,9 +72,10 @@ def whitelist(message):
         bot.send_message(chat_id, 'У вас нету доступа к YaGPT')
 
 @bot.message_handler(commands=['stt'])
-def stt(message):
-    chat_id = message.chat.id
-    bot.send_message(chat_id, f"Команда-пустышка")
+def stt_handler(message):
+    user_id = message.from_user.id
+    bot.send_message(user_id, 'Отправь голосовое сообщение, чтобы я его распознал!')
+    bot.register_next_step_handler(message, handle_stt)
 
 @bot.message_handler(commands=['tts'])
 @whitelist_check
@@ -92,7 +108,7 @@ def tokens_handler(message):
     user_name = message.from_user.first_name
     tokens = dbt.get_tokens(chat_id)
     symbols = dbS.get_token_count(chat_id)
-    blocks = None
+    blocks = dbS.get_blocks_vount(chat_id)
     bot.send_message(chat_id, f"""Информация по пользователю {user_name}
 
 Кол-во оставшихся токенов: {tokens}
@@ -119,9 +135,6 @@ def handle_tts(message):
     if current_characters - len(text) < 0: # проверка на то, что пользователь не уйдет в минус
         bot.send_message(chat_id, "Ты перешел лимит своих токенов, сделай текст покороче")
         return
-    if len(text) >= 100: # проверка на кол-во символов
-        bot.send_message(chat_id, "Ты написал текст длинне 100 символов, сделай текст покороче")
-        return
     current_characters = dbS.get_token_count(chat_id)
     success, audio_file_path = text_to_speech(text, str(chat_id))
     if success:
@@ -129,6 +142,32 @@ def handle_tts(message):
         bot.send_audio(chat_id, open(audio_file_path, 'rb'))
     else:
         bot.send_message(chat_id, "Ошибка при синтезе речи.")
+
+def handle_stt(message):
+    user_id = message.from_user.id
+
+    # Проверка, что сообщение действительно голосовое
+    if not message.voice:
+        return
+
+    # Считаем аудиоблоки и проверяем сумму потраченных аудиоблоков
+    stt_blocks = is_stt_block_limit(message, message.voice.duration)
+    if not stt_blocks:
+        return
+
+    file_id = message.voice.file_id  # получаем id голосового сообщения
+    file_info = bot.get_file(file_id)  # получаем информацию о голосовом сообщении
+    file = bot.download_file(file_info.file_path)  # скачиваем голосовое сообщение
+
+    # Получаем статус и содержимое ответа от SpeechKit
+    status, text = speech_to_text(file)  # преобразовываем голосовое сообщение в текст
+
+    # Если статус True - отправляем текст сообщения и сохраняем в БД, иначе - сообщение об ошибке
+    if status:
+        # Записываем сообщение и кол-во аудиоблоков в БД
+        bot.send_message(user_id, text, reply_to_message_id=message.id)
+    else:
+        bot.send_message(user_id, text)
 
 if __name__ == "__main__":
     print("Бот запускается...")
