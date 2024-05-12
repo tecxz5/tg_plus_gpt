@@ -5,7 +5,8 @@ from config import IAM_TOKEN, FOLDER_ID
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(filename='logs.log', level=logging.DEBUG,
-                    format='%(asctime)s - %(levelname)s - %(message)s')  # логер
+                    format='%(asctime)s - %(levelname)s - %(message)s',
+                    encoding='utf-8')  # логер
 
 class Role(enum.StrEnum):
     assistant = "assistant",
@@ -37,27 +38,11 @@ class Prompt:
 
 
 class PyYandexGpt:
-    def __init__(self, token, folder_id: str, gpt: str):
+    def __init__(self,):
         self.token = IAM_TOKEN
         self.folder_id = FOLDER_ID
-        self.gpt = 'yandexgpt-lite'
+        self.gpt = 'yandexgpt'
         self.history = {}
-
-
-
-    def add_history(self, role: Role, text: str, user_id: int) -> None:
-        if user_id not in self.history:
-            self.history[user_id] = []
-        self.history[user_id].append(Prompt(role, text))
-
-    def clear_history(self, user_id) -> None:
-        if user_id not in self.history:
-            return
-
-        self.history[user_id] = []
-
-    def get_history(self, user_id: int) -> [Prompt]:
-        return self.history[user_id]
 
     def create_request(self, user_id: int, prompt: str) -> requests.Response:
         url = f"https://llm.api.cloud.yandex.net/foundationModels/v1/completion"
