@@ -13,14 +13,27 @@ class SpeechKit:
                                 chat_id INTEGER PRIMARY KEY,
                                 token_count INTEGER DEFAULT 10000
                             )''')
+        self.cursor.execute('''CREATE TABLE IF NOT EXISTS blocks (
+                                        chat_id INTEGER PRIMARY KEY,
+                                        blocks_count INTEGER DEFAULT 120
+                                    )''')
         self.conn.commit()
 
     def add_user(self, chat_id, token_count=10000):
         self.cursor.execute("INSERT OR IGNORE INTO symbols (chat_id, token_count) VALUES (?, ?)", (chat_id, token_count))
+        self.cursor.execute("INSERT OR IGNORE INTO blocks (chat_id, blocks_count) VALUES (?, ?)",(chat_id, 120))
         self.conn.commit()
 
     def get_token_count(self, chat_id):
         self.cursor.execute("SELECT token_count FROM symbols WHERE chat_id = ?", (chat_id,))
+        result = self.cursor.fetchone()
+        if result:
+            return result[0]
+        else:
+            return 0
+
+    def get_blocks_vount(self, chat_id):
+        self.cursor.execute("SELECT blocks_count FROM blocks WHERE chat_id = ?", (chat_id,))
         result = self.cursor.fetchone()
         if result:
             return result[0]
