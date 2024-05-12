@@ -11,13 +11,13 @@ save_path = 'results'
 if not os.path.exists(save_path):
     os.makedirs(save_path, exist_ok=True)
 
-def text_to_speech(text: str, voice: str, chat_id: str) -> (bool, bytes):
+def text_to_speech(text: str, chat_id: str) -> (bool, bytes):
     headers = {
         "Authorization": f"Bearer {IAM_TOKEN}"}
     data = {
         'text': text,
         'lang': 'ru-RU',
-        'voice': voice,
+        'voice': 'alena',
         'folderId': FOLDER_ID
     }
     url = 'https://tts.api.cloud.yandex.net/speech/v1/tts:synthesize'
