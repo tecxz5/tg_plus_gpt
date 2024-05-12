@@ -37,6 +37,8 @@ class SpeechKit:
         result = self.cursor.fetchone()
         if result:
             return result[0]
+        elif result <= 0:
+            return 0
         else:
             return 0
 
