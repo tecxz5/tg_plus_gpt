@@ -29,6 +29,8 @@ class SpeechKit:
         result = self.cursor.fetchone()
         if result:
             return result[0]
+        elif result <= 100: # Вот эти 100 символов я себе оставлю
+            return 0
         else:
             return 0
 
@@ -37,7 +39,7 @@ class SpeechKit:
         result = self.cursor.fetchone()
         if result:
             return result[0]
-        elif result <= 0:
+        elif result <= 3: # Эти 3 блока я тоже себе оставлю
             return 0
         else:
             return 0
