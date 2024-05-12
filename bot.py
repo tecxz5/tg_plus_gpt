@@ -19,6 +19,7 @@ dbt.create_tables()
 dbS.create_database()
 
 def is_stt_block_limit(message, duration):
+    """Подсчет блоков"""
     chat_id = message.from_user.id
 
     # Переводим секунды в аудиоблоки
@@ -38,11 +39,11 @@ def is_stt_block_limit(message, duration):
 
     return audio_blocks
 
-
 def is_user_whitelisted(chat_id): # используется в /whitelist и декораторе
     return chat_id in WHITELISTED_USERS
 
 def whitelist_check(func):
+    """Поздравьте нормально работающий декоратор"""
     @functools.wraps(func)
     def wrapper(message):
         chat_id = message.chat.id
@@ -67,7 +68,7 @@ def help(message):
     bot.send_message(message.chat.id,
                       text="""
 Бот работает на базе YaGPT(ЯЖПТ) и SpeechKit
-Документация бота здесь - https://hoprik.ru/u/11bc18
+Документация бота здесь - https://hoprik.ru/u/11bc18 
 Проверить можете ли вы воспользоваться ботом здеся: /whitelist""")
 
 @bot.message_handler(commands=['whitelist'])
@@ -91,7 +92,7 @@ def tts(message):
     current_characters = dbS.get_token_count(chat_id)
 
     # Проверка, достаточно ли символов для обработки запроса
-    if current_characters < 10:
+    if current_characters == 0:
         bot.send_message(chat_id, "Недостаточно символов. Озвучить текст невозможно")
         return
     bot.send_message(chat_id, "Пожалуйста, введите текст для синтеза речи:")
