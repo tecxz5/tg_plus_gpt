@@ -2,13 +2,16 @@ import math
 import telebot
 import logging
 import functools
-from telebot import types
+import subprocess
+import time
+import schedule
+from auto_token import run_token_update
 from yandex_gpt import PyYandexGpt
 from database_YaGPT import Tokens
 from database_history import History
 from database_SpeechKit import SpeechKit
 from speechkit import text_to_speech, speech_to_text
-from config import TOKEN, WHITELISTED_USERS, IAM_TOKEN, FOLDER_ID
+from config import TOKEN, WHITELISTED_USERS
 
 bot = telebot.TeleBot(TOKEN)
 dbt = Tokens("tokens.db")
