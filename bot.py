@@ -14,9 +14,12 @@ bot = telebot.TeleBot(TOKEN)
 dbt = Tokens("tokens.db")
 dbh = History("history.db")
 dbS = SpeechKit()
+gpt = PyYandexGpt()
 logging.basicConfig(level=logging.DEBUG)
 dbt.create_tables()
 dbS.create_database()
+
+system_prompt = "Ты - собеседник женского пола, общайся с пользователем"
 
 def is_stt_block_limit(message, duration):
     """Подсчет блоков"""
@@ -57,6 +60,7 @@ def whitelist_check(func):
 def start(message):
     chat_id = message.chat.id
     user_name = message.from_user.first_name
+    dbh.create_table(chat_id)
     dbt.create_user_profile(chat_id)
     dbS.add_user(chat_id)
     bot.send_message(chat_id,
@@ -125,10 +129,46 @@ def tokens_handler(message):
 
 @bot.message_handler(content_types=['text'])
 @whitelist_check
-def text_reply(message):
+def handle_gpt(message):
     chat_id = message.chat.id
-    bot.send_message(chat_id, 'Я тебе буду отвечать только одной заготовленной фразой😊')
-
+    current_tokens = dbt.get_tokens(chat_id)
+    if current_tokens < 50:
+        bot.send_message(chat_id,
+                         "Ваши токены закончились, функция общения с нейросетью невозможна")
+    else:
+        text = message.text  # Получаем текст сообщения от пользователя
+        user_history = dbh.get_history(message.chat.id)
+        history_text = "\n".join([f"{row[0]}: {row[1]} ({row[2]})" for row in user_history])
+        logging.info(f"История общения: {history_text}")
+        final_text = f"{text}, История чата: {history_text}"
+        system_text = system_prompt
+        prompt = [{"role": "system",
+                   "text": system_text},
+                  {"role": "user",
+                   "text": final_text}]  # Используем текст сообщения как prompt
+        response = gpt.create_request(chat_id, prompt)
+        if response.status_code == 200:
+            try:
+                response_json = response.json()
+                result_text = response_json['result']['alternatives'][0]['message']['text']
+                logging.info(response_json)
+                count = gpt.count_tokens(final_text)
+                dbt.deduct_tokens(chat_id, count)
+                bot.send_message(chat_id, result_text)
+                dbh.save_message(chat_id, 'user', text)
+                dbh.save_message(chat_id, 'assistant', result_text)
+                logging.info(f"История ответа от пользователя {chat_id} сохранена")
+                return
+            except KeyError:
+                logging.error('Ответ от API GPT не содержит ключа "result"')
+                bot.send_message(chat_id, "Извините, не удалось сгенерировать историю.")
+        else:
+            logging.error(f'Ошибка API GPT: {response.status_code}')
+            bot.send_message(chat_id, f"""
+        Извините, произошла ошибка при обращении к API GPT.
+        Ошибка: {response.status_code}
+        Если ошибка 429 - нейросеть просит не так часто писать промпты либо же она нагружена""")
+            return
 
 @bot.message_handler(content_types=['voice'])
 @whitelist_check
