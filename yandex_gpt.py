@@ -8,11 +8,6 @@ logging.basicConfig(filename='logs.log', level=logging.DEBUG,
                     format='%(asctime)s - %(levelname)s - %(message)s',
                     encoding='utf-8')  # логер
 
-class Role(enum.StrEnum):
-    assistant = "assistant",
-    user = "user",
-    system = "system"
-
 def get_token() -> str:
     url = "http://169.254.169.254/computeMetadata/v1/instance/service-accounts/default/token"
     headers = {"Metadata-Flavor": "Google"}
@@ -26,16 +21,6 @@ class YandexGptError(Exception):
     @staticmethod
     def __new__(*args, **kwargs):
         pass
-
-
-class Prompt:
-    def __init__(self, role: Role, prompt: str):
-        self.role = role
-        self.prompt = prompt
-
-    def to_dict(self):
-        return {"role": self.role, "prompt": self.prompt}
-
 
 class PyYandexGpt:
     def __init__(self,):
@@ -81,9 +66,6 @@ class PyYandexGpt:
                     raise YandexGptError(rep.json()['error']["message"])
         except Exception as e:
             raise YandexGptError(e)
-
-        self.add_history(Role.assistant, result, user_id)
-
         return {"result": result, "tokens": token}
 
     def count_tokens(self, text: str) -> int:
