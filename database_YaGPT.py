@@ -20,16 +20,6 @@ class Tokens:
         self.cursor.execute("INSERT OR IGNORE INTO sessions (chat_id , tokens) VALUES ( ?, ?)", (chat_id, 4000))
         self.conn.commit()
 
-    def get_user_data(self, chat_id):
-        self.cursor = self.conn.cursor()
-        result = self.cursor.fetchone()
-        if result:
-            return {
-                'chat_id': result[0],
-                'tokens': result[1]
-            }
-        return None
-
     def deduct_tokens(self, chat_id, tokens_count):
         logging.info(f"Отнимаем {tokens_count} токенов у пользователя {chat_id}")
         self.cursor.execute("UPDATE sessions SET tokens = tokens - ? WHERE chat_id = ?", (tokens_count, chat_id))
@@ -41,6 +31,8 @@ class Tokens:
         result = self.cursor.fetchone()
         if result:
             return result[0]
+        elif result <= 50:
+            return 0 # Да я зажимаю 50 токенов
         else:
             return 0
 
