@@ -102,9 +102,15 @@ def tts(message):
     bot.register_next_step_handler(message, handle_tts)
 
 @bot.message_handler(commands=['debug'])
+@whitelist_check
 def debug(message):
     chat_id = message.chat.id
-    bot.send_message(chat_id, f"Команда-пустышка")
+    try:
+        with open('logs.log', 'rb') as log_file:
+            bot.send_document(chat_id, log_file)
+        bot.send_message(chat_id, "Файл с логами отправлен.")
+    except Exception as e:
+        bot.send_message(chat_id, f"Ошибка при отправке файла с логами: {e}")
 
 @bot.message_handler(commands=['clear'])
 def clear(message):
