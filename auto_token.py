@@ -8,7 +8,7 @@ def get_token() -> str:
 
 def update_config_file(file_path):
     # Чтение содержимого файла
-    with open(file_path, 'r') as file:
+    with open('config.py', 'r') as file:
         content = file.read()
 
     # Получение нового токена
