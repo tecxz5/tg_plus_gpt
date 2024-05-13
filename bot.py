@@ -134,10 +134,10 @@ def tokens_handler(message):
 
 @bot.message_handler(content_types=['text'])
 @whitelist_check
-def handle_gpt(message):
+def text_reply(message):
     chat_id = message.chat.id
     current_tokens = dbt.get_tokens(chat_id)
-    if current_tokens < 50:
+    if current_tokens == 0:
         bot.send_message(chat_id,
                          "Ваши токены закончились, функция общения с нейросетью невозможна")
     else:
@@ -179,7 +179,72 @@ def handle_gpt(message):
 @whitelist_check
 def voice_reply(message):
     chat_id = message.chat.id
-    bot.send_message(chat_id, "Пока ответить на голосовое сообщение голосовым я не могу😥")
+    if not message.voice:
+        return
+
+    # Считаем аудиоблоки и проверяем сумму потраченных аудиоблоков
+    stt_blocks = is_stt_block_limit(message, message.voice.duration)
+    if not stt_blocks:
+        return
+
+    file_id = message.voice.file_id  # получаем id голосового сообщения
+    file_info = bot.get_file(file_id)  # получаем информацию о голосовом сообщении
+    file = bot.download_file(file_info.file_path)  # скачиваем голосовое сообщение
+
+    # Получаем статус и содержимое ответа от SpeechKit
+    status, text = speech_to_text(file)  # преобразовываем голосовое сообщение в текст
+
+    # Если статус True - отправляем текст сообщения и сохраняем в БД, иначе - сообщение об ошибке
+    if status:
+        dbS.update_blocks_count(chat_id,dbS.get_blocks_vount(chat_id) - stt_blocks)
+        current_tokens = dbt.get_tokens(chat_id)
+        if current_tokens == 0:
+            bot.send_message(chat_id,
+                             "Ваши токены закончились, функция общения с нейросетью невозможна")
+        else:
+            text = status
+            user_history = dbh.get_history(message.chat.id)
+            history_text = "\n".join([f"{row[0]}: {row[1]} ({row[2]})" for row in user_history])
+            logging.info(f"История общения: {history_text}")
+            final_text = f"{text}, История чата: {history_text}"
+            system_text = system_prompt
+            prompt = [{"role": "system",
+                       "text": system_text},
+                      {"role": "user",
+                       "text": final_text}]  # Используем текст сообщения как prompt
+            response = gpt.create_request(chat_id, prompt)
+            if response.status_code == 200:
+                try:
+                    response_json = response.json()
+                    result_text = response_json['result']['alternatives'][0]['message']['text']
+                    logging.info(response_json)
+                    count = gpt.count_tokens(final_text)
+                    dbt.deduct_tokens(chat_id, count)
+                    dbh.save_message(chat_id, 'user', text)
+                    dbh.save_message(chat_id, 'assistant', result_text)
+                    logging.info(f"История ответа от пользователя {chat_id} сохранена")
+                    current_characters = dbS.get_token_count(chat_id)
+                    text = result_text
+                    if current_characters - len(text) < 0:  # проверка на то, что пользователь не уйдет в минус
+                        bot.send_message(chat_id, "Ты перешел лимит своих токенов, сделай текст покороче")
+                        return
+                    current_characters = dbS.get_token_count(chat_id)
+                    success, audio_file_path = text_to_speech(text, str(chat_id))
+                    if success:
+                        dbS.update_token_count(chat_id, current_characters - len(text))
+                        bot.send_audio(chat_id, open(audio_file_path, 'rb'))
+                    else:
+                        bot.send_message(chat_id, "Ошибка при синтезе речи.")
+                except KeyError:
+                    logging.error('Ответ от API GPT не содержит ключа "result"')
+                    bot.send_message(chat_id, "Извините, не удалось сгенерировать историю.")
+            else:
+                logging.error(f'Ошибка API GPT: {response.status_code}')
+                bot.send_message(chat_id, f"""
+                Извините, произошла ошибка при обращении к API GPT.
+                Ошибка: {response.status_code}
+                Если ошибка 429 - нейросеть просит не так часто писать промпты либо же она нагружена""")
+                return
 
 def handle_tts(message):
     chat_id = message.chat.id
@@ -220,7 +285,7 @@ def handle_stt(message):
         # Записываем сообщение и кол-во аудиоблоков в БД
         bot.send_message(chat_id, text, reply_to_message_id=message.id)
         # Здесь добавляем обновление количества блоков
-        dbS.update_blocks_count(chat_id,dbS.get_blocks_vount(chat_id) - stt_blocks)  # Предполагаем, что один блок используется за запрос
+        dbS.update_blocks_count(chat_id,dbS.get_blocks_vount(chat_id) - stt_blocks)
     else:
         bot.send_message(chat_id, text)
 
