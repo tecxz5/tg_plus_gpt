@@ -1,5 +1,5 @@
 import telebot
-from config import TOKEN
+from config import *
 from database import Database
 
 bot = telebot.TeleBot(TOKEN)
@@ -7,7 +7,7 @@ db = Database('database.db')
 db.create_table_if_not_exists()
 
 def check_user_id_and_send_db(message):
-    if message.from_user.id == <>:  # Замените <> на ID пользователя
+    if message.from_user.id == {ID}:
         with open('database.db', 'rb') as db_file:
             bot.send_document(message.chat.id, db_file)
         bot.send_message(message.chat.id, 'Файл базы данных отправлен.')
