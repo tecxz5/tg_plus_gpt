@@ -2,6 +2,7 @@ import math
 import telebot
 import logging
 import functools
+from auto_token import update_config_file
 from yandex_gpt import PyYandexGpt
 from database_YaGPT import Tokens
 from database_history import History
@@ -73,6 +74,12 @@ def help(message):
 Бот работает на базе YaGPT(ЯЖПТ) и SpeechKit
 Документация бота здесь - https://hoprik.ru/u/11bc18 
 Проверить можете ли вы воспользоваться ботом здеся: /whitelist""")
+
+@bot.message_handler(commands=['update_token'])
+def handle_update_token(message):
+    update_config_file()
+    bot.reply_to(message, "Токен успешно обновлен в файле конфигурации.")
+
 
 @bot.message_handler(commands=['whitelist'])
 def whitelist(message):
