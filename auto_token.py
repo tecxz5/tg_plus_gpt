@@ -6,7 +6,7 @@ def get_token() -> str:
     response = requests.request("GET", url, headers=headers)
     return response.json()["access_token"]
 
-def update_config_file(file_path):
+def update_config_file():
     # Чтение содержимого файла
     with open('config.py', 'r') as file:
         content = file.read()
@@ -18,5 +18,5 @@ def update_config_file(file_path):
     content = content.replace('IAM_TOKEN = "old_token_value"', f'IAM_TOKEN = "{new_token}"')
 
     # Перезапись файла с новым содержимым
-    with open(file_path, 'w') as file:
+    with open('config.py', 'w') as file:
         file.write(content)
