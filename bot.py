@@ -1,8 +1,6 @@
-import math
 import telebot
 import logging
 import functools
-from auto_token import update_config_file
 from yandex_gpt import PyYandexGpt
 from database_YaGPT import Tokens
 from database_history import History
@@ -21,7 +19,7 @@ def is_user_whitelisted(chat_id): # используется в /whitelist и д
     return chat_id in WHITELISTED_USERS
 
 def whitelist_check(func):
-    """Поздравьте нормально работающий декоратор"""
+    """Поздравьте, нормально работающий декоратор"""
     @functools.wraps(func)
     def wrapper(message):
         chat_id = message.chat.id
@@ -67,8 +65,6 @@ def tokens_handler(message):
     chat_id = message.chat.id
     user_name = message.from_user.first_name
     tokens = dbt.get_tokens(chat_id)
-    symbols = dbS.get_token_count(chat_id)
-    blocks = dbS.get_blocks_vount(chat_id)
     bot.send_message(chat_id, f"""Информация по пользователю {user_name}
 
 Кол-во оставшихся токенов: {tokens}
