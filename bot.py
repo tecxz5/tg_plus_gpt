@@ -72,7 +72,6 @@ def help(message):
     bot.send_message(message.chat.id,
                       text="""
 Бот работает на базе YaGPT(ЯЖПТ) и SpeechKit
-Документация бота здесь - https://hoprik.ru/u/11bc18 
 Проверить можете ли вы воспользоваться ботом здеся: /whitelist""")
 
 @bot.message_handler(commands=['update_token'])
