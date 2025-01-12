@@ -41,7 +41,7 @@ class History:
 
     def get_history(self, user_id):
         table_name = f"history_{user_id}"
-        sql = f''' SELECT role, message, timestamp FROM {table_name} ORDER BY timestamp DESC LIMIT 3'''
+        sql = f''' SELECT role, message, timestamp FROM {table_name} ORDER BY timestamp DESC LIMIT 4'''
         cur = self.conn.cursor()
         cur.execute(sql)
         rows = cur.fetchall()
